@@ -15,6 +15,14 @@
             <ul class="navbar-nav ms-auto">
                 @if (SignInManager.IsSignedIn(User))
                 {
+                    var user = await UserManager.GetUserAsync(User);
+
+                    if (user is GovernmentAccount)
+                    {
+                    }
+                    else
+                    {
+                    }
                     <li class="nav-item">
                         <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                             <button type="submit" class="btn btn-link nav-link">Logout</button>

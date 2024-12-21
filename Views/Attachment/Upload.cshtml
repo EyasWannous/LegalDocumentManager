@@ -1,0 +1,18 @@
+﻿@{
+    ViewData["Title"] = "Upload Attachment";
+}
+
+<h1>Upload Attachment</h1>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["Error"]
+    </div>
+}
+
+<form asp-action="Upload" method="post" enctype="multipart/form-data">
+    <label for="file">Select File:</label>
+    <input type="file" name="file" id="file" class="form-control" />
+    <button type="submit" class="btn btn-primary mt-2">Upload</button>
+</form>
