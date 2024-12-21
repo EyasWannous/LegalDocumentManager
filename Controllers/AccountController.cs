@@ -74,13 +74,27 @@ public class AccountController : Controller
             return View(model);
         }
 
-        var user = new ApplicationUser 
-        { 
-            UserName = model.NationalNumber,
-            Email = model.NationalNumber,
-            PhoneNumber = model.PhoneNumber,
-            FullName = model.FullName 
-        };
+        ApplicationUser user;
+        if (model.IsGovernmentAccount)
+        {
+            user = new GovernmentAccount
+            {
+                UserName = model.NationalNumber,
+                Email = model.NationalNumber,
+                PhoneNumber = model.PhoneNumber,
+                FullName = model.FullName,
+            };
+        }
+        else
+        {
+            user = new ApplicationUser
+            {
+                UserName = model.NationalNumber,
+                Email = model.NationalNumber,
+                PhoneNumber = model.PhoneNumber,
+                FullName = model.FullName
+            };
+        }
         
         var result = await _userManager.CreateAsync(user, model.Password);
 
