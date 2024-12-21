@@ -1,0 +1,32 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+
+@model LoginViewModel
+@if (TempData["Error"] is not null)
+{
+    <div class="alert alert-danger">
+        @TempData["Error"]
+    </div>
+}
+
+<form asp-action="Login" method="post">
+    <label>NationalNumber</label>
+    <input asp-for="NationalNumber" class="form-control" />
+    <span asp-validation-for="NationalNumber" class="text-danger"></span>
+
+    <label>Password</label>
+    <input asp-for="Password" type="password" class="form-control" />
+    <span asp-validation-for="Password" class="text-danger"></span>
+
+    <label>Remember Me</label>
+    <input asp-for="RememberMe" type="checkbox" />
+
+    <button type="submit" class="btn btn-primary">Login</button>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
