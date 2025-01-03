@@ -1,4 +1,5 @@
 using LegalDocumentManager.Data;
+using LegalDocumentManager.Extensions;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -6,8 +7,13 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseInMemoryDatabase("TestDb")
+    options.UseInMemoryDatabase("TestDb").EnableSensitiveDataLogging()
 );
+
+builder.Services.Configure<IISServerOptions>(options =>
+{
+    options.MaxRequestBodySize = 104857600; // 100 MB
+});
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
@@ -43,11 +49,20 @@ builder.Services.AddControllersWithViews();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+else
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    await ApplicationDbInitializer.SeedUsersAndRolesAsync(services);
 }
 
 app.UseHttpsRedirection();
