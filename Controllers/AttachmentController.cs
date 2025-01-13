@@ -138,6 +138,9 @@ public class AttachmentController : Controller
         if (attachment is null)
             return NotFound();
 
+        var filePath = Path.Combine(Directory.GetCurrentDirectory(), $"wwwroot/{attachment.FilePath}");
+        System.IO.File.Delete(filePath);
+
         _context.Attachments.Remove(attachment);
         await _context.SaveChangesAsync();
 
