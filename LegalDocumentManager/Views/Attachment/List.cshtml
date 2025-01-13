@@ -1,0 +1,68 @@
+﻿@using LegalDocumentManager.Data
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
+
+@model IEnumerable<Attachment>
+
+@{
+    ViewData["Title"] = "Attachments";
+}
+
+<h1>Your Attachments</h1>
+
+@if (TempData["Success"] is not null)
+{
+    <div class="alert alert-success">
+        @TempData["Success"]
+    </div>
+}
+
+@if (await UserManager.GetUserAsync(User) is GovernmentAccount)
+{
+    <div class="mb-3">
+        <form asp-action="List" method="get">
+            <div class="input-group">
+                <input type="text" name="searchNationalNumber" class="form-control" placeholder="Search by National Number" value="@ViewData["SearchQuery"]" />
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </form>
+    </div>
+}
+
+<table class="table">
+    <thead>
+        <tr>
+            @if (await UserManager.GetUserAsync(User) is GovernmentAccount)
+            {           
+                <th>User National Number</th>
+            }           
+            <th>File Name</th>
+            <th>Uploaded By</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var attachment in Model)
+        {
+            <tr>
+                @if (await UserManager.GetUserAsync(User) is GovernmentAccount)
+                {
+                    <th>@attachment.User?.Email</th>
+                }
+                <td>@attachment.FileName</td>
+                <td>@attachment.User?.FullName</td>
+                <td>
+                    @* <a href="@attachment.FilePath" class="btn btn-info">View</a> *@
+                    <a href="@attachment.FilePath" class="btn btn-info" target="_blank">View</a>
+                    <a asp-action="Download" asp-route-id="@attachment.Id" class="btn btn-secondary">Download</a>
+                    @if (await UserManager.GetUserAsync(User) is not GovernmentAccount)
+                    {
+                        <form asp-action="Delete" asp-route-id="@attachment.Id" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this file?');">Delete</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

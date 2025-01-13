@@ -1,0 +1,49 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+
+@model RegisterViewModel
+@if (TempData["Error"] is not null)
+{
+    <div class="alert alert-danger">
+        @TempData["Error"]
+    </div>
+}
+
+<form asp-action="Register" method="post">
+    <label>Full Name</label>
+    <input asp-for="FullName" class="form-control" />
+    <span asp-validation-for="FullName" class="text-danger"></span>
+
+    <label>National Number</label>
+    <input asp-for="NationalNumber" class="form-control" />
+    <span asp-validation-for="NationalNumber" class="text-danger"></span>
+
+    <label>Phone Number</label>
+    <input asp-for="PhoneNumber" class="form-control" />
+    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+
+    <label>Birthday</label>
+    <input asp-for="Birthday" type="date" class="form-control" />
+    <span asp-validation-for="Birthday" class="text-danger"></span>
+
+    <label>Password</label>
+    <input asp-for="Password" type="password" class="form-control" />
+    <span asp-validation-for="Password" class="text-danger"></span>
+
+    <label>Confirm Password</label>
+    <input asp-for="ConfirmPassword" type="password" class="form-control" />
+    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+
+    <label>Government Account</label>
+    <input asp-for="IsGovernmentAccount" type="checkbox" class="form-check-input" />
+
+    <button type="submit" class="btn btn-primary">Register</button>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
+
