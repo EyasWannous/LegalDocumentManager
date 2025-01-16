@@ -1,10 +1,11 @@
 ﻿using CertificateAuthorityServer.Utilities;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Cryptography;
 
 namespace CertificateAuthorityServer.Controllers;
 
 [ApiController]
-[Route("[controller]/api")]
+[Route("api/[controller]")]
 public class PublicKeyController : ControllerBase
 {
     private readonly KeyManagementService _keyManagementService;
@@ -17,6 +18,17 @@ public class PublicKeyController : ControllerBase
     [HttpGet]
     public IActionResult Get()
     {
-        return Ok(_keyManagementService.GetPublicKey());
+        try
+        {
+            using (RSA rsa = _keyManagementService.GetPublicKey())
+            {
+                string publicKeyBase64 = Convert.ToBase64String(rsa.ExportSubjectPublicKeyInfo());
+                return Ok(new { PublicKey = publicKeyBase64 });
+            }
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Error = "Failed to retrieve public key.", Message = ex.Message });
+        }
     }
 }
