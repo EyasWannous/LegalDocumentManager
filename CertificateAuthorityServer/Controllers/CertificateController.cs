@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using CertificateAuthorityServer.Utilities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CertificateAuthorityServer.Controllers;
@@ -9,150 +10,92 @@ namespace CertificateAuthorityServer.Controllers;
 [Route("api/[controller]")]
 public class CertificateController : ControllerBase
 {
-    private static X509Certificate2 _caCertificate;
+    private readonly KeyManagementService _keyManagementService;
 
-    static CertificateController()
+    public CertificateController(KeyManagementService keyManagementService)
     {
-        // Create or load a self-signed root CA certificate for the server
-        using var rsa = RSA.Create(2048);
-        var request = new CertificateRequest(
-            "CN=MyCertificateAuthority", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1
-        );
-
-        request.CertificateExtensions.Add(
-            new X509BasicConstraintsExtension(true, false, 0, true)
-        );
-
-        request.CertificateExtensions.Add(
-            new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, true)
-        );
-
-        var notBefore = DateTimeOffset.UtcNow;
-        var notAfter = notBefore.AddYears(10);
-
-        _caCertificate = request.CreateSelfSigned(notBefore, notAfter);
+        _keyManagementService = keyManagementService;
     }
 
-    [HttpPost("sign-document")]
-    public IActionResult SignDocument([FromBody] string document)
+    [HttpPost("sign")]
+    public IActionResult Sign([FromBody] string data)
     {
-        if (string.IsNullOrEmpty(document))
-        {
-            return BadRequest("Document cannot be null or empty.");
-        }
+        if (string.IsNullOrEmpty(data))
+            return BadRequest("Data to sign cannot be empty.");
 
-        var documentBytes = Encoding.UTF8.GetBytes(document);
-
-        using var rsa = _caCertificate.GetRSAPrivateKey();
-        if (rsa is null)
-            return BadRequest("Invalid request.");
-
-        var signedBytes = rsa.SignData(documentBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-
-        var signedBase64 = Convert.ToBase64String(signedBytes);
-
-        return Ok(new { SignedDocument = signedBase64 });
+        var signature = _keyManagementService.SignData(data);
+        return Ok(new { Signature = Convert.ToBase64String(signature) });
     }
 
-    [HttpPost("verify-document")]
-    public IActionResult VerifyDocument([FromBody] VerificationRequest request)
+    [HttpPost("verify")]
+    public IActionResult Verify([FromBody] VerifyRequest request)
     {
-        if (string.IsNullOrEmpty(request.Document) || string.IsNullOrEmpty(request.SignedDocument))
-        {
-            return BadRequest("Invalid request.");
-        }
+        if (string.IsNullOrEmpty(request.OriginalData) || string.IsNullOrEmpty(request.Signature))
+            return BadRequest("Original data and signature cannot be empty.");
 
-        var documentBytes = Encoding.UTF8.GetBytes(request.Document);
-        byte[] signedBytes;
-        try
-        {
-            signedBytes = Convert.FromBase64String(request.SignedDocument);
-        }
-        catch (Exception)
-        {
-            return BadRequest("Invalid request.");
-        }
-
-        using var rsa = _caCertificate.GetRSAPublicKey();
-        if (rsa is null)
-            return BadRequest("Invalid request.");
-
-        var isValid = rsa.VerifyData(documentBytes, signedBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-
+        byte[] signatureBytes = Convert.FromBase64String(request.Signature);
+        bool isValid = _keyManagementService.VerifySignature(request.OriginalData, signatureBytes);
         return Ok(new { IsValid = isValid });
     }
 
-    public async Task Test()
+    [HttpPost("generate-certificate")]
+    public IActionResult GenerateCertificate([FromBody] CertificateRequest request)
     {
-        using RSA parent = RSA.Create(4096);
-        using RSA rsa = RSA.Create(2048);
-        
-        var parentReq = new CertificateRequest(
-            "CN=Experimental Issuing Authority",
-            parent,
-            HashAlgorithmName.SHA256,
-            RSASignaturePadding.Pkcs1
-        );
+        if (request == null || string.IsNullOrEmpty(request.ClientPublicKey))
+        {
+            return BadRequest("Invalid request. A client public key is required.");
+        }
 
-        parentReq.CertificateExtensions.Add(
-            new X509BasicConstraintsExtension(true, false, 0, true)
-        );
-
-        parentReq.CertificateExtensions.Add(
-            new X509SubjectKeyIdentifierExtension(parentReq.PublicKey, false)
-        );
-
-        using X509Certificate2 parentCert = parentReq.CreateSelfSigned(
-            DateTimeOffset.UtcNow.AddDays(-45),
-            DateTimeOffset.UtcNow.AddDays(365)
-        );
-        
-        var req = new CertificateRequest(
-            "CN=Valid-Looking Timestamp Authority",
-            rsa,
-            HashAlgorithmName.SHA256,
-            RSASignaturePadding.Pkcs1
-        );
-
-        req.CertificateExtensions.Add(
-            new X509BasicConstraintsExtension(false, false, 0, false));
-
-        req.CertificateExtensions.Add(
-            new X509KeyUsageExtension(
-                X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.NonRepudiation,
-                false
-            )
-        );
-
-        req.CertificateExtensions.Add(
-            new X509EnhancedKeyUsageExtension(
-                [
-                    new Oid("1.3.6.1.5.5.7.3.8")
-                ],
-                true
-            )
-        );
-
-        req.CertificateExtensions.Add(
-            new X509SubjectKeyIdentifierExtension(req.PublicKey, false)
-        );
-
-        using X509Certificate2 cert = req.Create(
-            parentCert,
-            DateTimeOffset.UtcNow.AddDays(-1),
-            DateTimeOffset.UtcNow.AddDays(90),
-            [1, 2, 3, 4]
-        );
-
-        // Do something with these certs, like export them to PFX,
-        // or add them to an X509Store, or whatever.
-
-        var store = new X509Store();
+        try
+        {
+            var certificate = _keyManagementService.GenerateCertificate(request);
+            return Ok(certificate);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
-    public class VerificationRequest
+    [HttpPost("validate-certificate")]
+    public IActionResult ValidateCertificate([FromBody] Certificate certificate)
     {
-        public string Document { get; set; } = string.Empty;
-        public string SignedDocument { get; set; } = string.Empty;
+        if (certificate == null || string.IsNullOrEmpty(certificate.Signature))
+        {
+            return BadRequest("Invalid certificate. A valid signature is required.");
+        }
+
+        try
+        {
+            bool isValid = _keyManagementService.ValidateCertificate(certificate);
+            return Ok(new { IsValid = isValid });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = ex.Message });
+        }
     }
+}
+
+public class VerifyRequest
+{
+    public string OriginalData { get; set; }
+    public string Signature { get; set; }
+}
+
+public class CertificateRequest
+{
+    public string IssuedTo { get; set; }
+    public DateTime Expiry { get; set; }
+    public string ClientPublicKey { get; set; } // Base64-encoded client public key
+}
+
+public class Certificate
+{
+    public string IssuedTo { get; set; }
+    public string IssuedFrom { get; set; }
+    public DateTime IssuedAt { get; set; }
+    public DateTime Expiry { get; set; }
+    public string ClientPublicKey { get; set; }
+    public string Signature { get; set; } // CA's signature for the certificate
 }
