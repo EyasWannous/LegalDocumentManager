@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using CertificateAuthorityServer.Utilities;
 using Microsoft.AspNetCore.Mvc;
 
@@ -112,4 +113,14 @@ public class Certificate
 
     [Required]
     public string Signature { get; set; } = string.Empty; // CA's signature for the certificate
+
+    public override string ToString()
+    {
+        return JsonSerializer.Serialize(this);
+    }
+
+    public static Certificate? FromString(string str)
+    {
+        return JsonSerializer.Deserialize<Certificate>(str);
+    }
 }

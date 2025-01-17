@@ -1,3 +1,4 @@
+using CertificateAuthorityServer.Data;
 using CertificateAuthorityServer.Utilities;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +12,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<KeyManagementService>();
-
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseInMemoryDatabase("CADB")
