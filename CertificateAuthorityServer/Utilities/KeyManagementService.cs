@@ -17,12 +17,10 @@ public class KeyManagementService
         DomainUrl = configuration["DomainUrl"]!;
     }
 
-    public Certificate GenerateCertificate(CertificateRequest request)
+    public async Task<Certificate> GenerateCertificateAsync(CertificateRequest request)
     {
         if (string.IsNullOrEmpty(request.ClientPublicKey))
-        {
             throw new ArgumentException("Client public key is required.");
-        }
 
         var certificate = new Certificate
         {
@@ -42,7 +40,7 @@ public class KeyManagementService
             certificate.ClientPublicKey
         });
 
-        using (RSA rsa = GetPrivateKey())
+        using (RSA rsa = await GetPrivateKeyAsync())
         {
             byte[] certificateBytes = Encoding.UTF8.GetBytes(certificateData);
             byte[] signature = rsa.SignData(certificateBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
@@ -52,7 +50,7 @@ public class KeyManagementService
         return certificate;
     }
 
-    public bool ValidateCertificate(Certificate certificate)
+    public async Task<bool> ValidateCertificateAsync(Certificate certificate)
     {
         // Check if the certificate has expired
         if (DateTime.UtcNow < certificate.IssuedAt || DateTime.UtcNow > certificate.Expiry)
@@ -69,13 +67,19 @@ public class KeyManagementService
         });
 
         // Verify the signature
-        using RSA rsa = GetPublicKey();
+        using RSA rsa = await GetPublicKeyAsync();
         byte[] certificateBytes = Encoding.UTF8.GetBytes(certificateData);
         byte[] signatureBytes = Convert.FromBase64String(certificate.Signature);
-        return rsa.VerifyData(certificateBytes, signatureBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+        return rsa.VerifyData(
+            certificateBytes,
+            signatureBytes,
+            HashAlgorithmName.SHA256,
+            RSASignaturePadding.Pkcs1
+        );
     }
 
-    public void GenerateKeyPair()
+    public async Task GenerateKeyPairAsync()
     {
         using RSA rsa = RSA.Create(2048); // Generate a 2048-bit RSA key pair
                                           // Export public key
@@ -84,24 +88,25 @@ public class KeyManagementService
 
         // Export and encrypt private key
         var privateKey = rsa.ExportRSAPrivateKey();
-        var encryptedPrivateKey = EncryptPrivateKey(privateKey);
+        var encryptedPrivateKey = await EncryptPrivateKeyAsync(privateKey);
         File.WriteAllBytes(PrivateKeyPath, encryptedPrivateKey);
     }
 
-    public RSA GetPrivateKey()
+    public async Task<RSA> GetPrivateKeyAsync()
     {
         if (!File.Exists(PrivateKeyPath))
             throw new FileNotFoundException("Private key not found.");
 
         var encryptedPrivateKey = File.ReadAllBytes(PrivateKeyPath);
-        var privateKey = DecryptPrivateKey(encryptedPrivateKey);
+        var privateKey = await DecryptPrivateKeyAsync(encryptedPrivateKey);
 
         RSA rsa = RSA.Create();
         rsa.ImportRSAPrivateKey(privateKey, out _);
+
         return rsa;
     }
 
-    public RSA GetPublicKey()
+    public Task<RSA> GetPublicKeyAsync()
     {
         if (!File.Exists(PublicKeyPath))
             throw new FileNotFoundException("Public key not found.");
@@ -109,27 +114,33 @@ public class KeyManagementService
         var publicKey = File.ReadAllBytes(PublicKeyPath);
         RSA rsa = RSA.Create();
         rsa.ImportRSAPublicKey(publicKey, out _);
-        return rsa;
+
+        return Task.FromResult(rsa);
     }
 
-    public byte[] SignData(string dataToSign)
+    public async Task<byte[]> SignDataAsync(string dataToSign)
     {
-        using RSA rsa = GetPrivateKey();
+        using RSA rsa = await GetPrivateKeyAsync();
         byte[] dataBytes = Encoding.UTF8.GetBytes(dataToSign);
-        return rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+        return rsa.SignData(
+            dataBytes,
+            HashAlgorithmName.SHA256,
+            RSASignaturePadding.Pkcs1
+        );
     }
 
-    public bool VerifySignature(string originalData, byte[] signature)
+    public async Task<bool> VerifySignatureAsync(string originalData, byte[] signature)
     {
-        using RSA rsa = GetPublicKey();
+        using RSA rsa = await GetPublicKeyAsync();
         byte[] dataBytes = Encoding.UTF8.GetBytes(originalData);
         return rsa.VerifyData(dataBytes, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
     }
 
-    private byte[] EncryptPrivateKey(byte[] privateKey)
+    private async Task<byte[]> EncryptPrivateKeyAsync(byte[] privateKey)
     {
         using Aes aes = Aes.Create();
-        aes.Key = DeriveKeyFromPassphrase();
+        aes.Key = await DeriveKeyFromPassphraseAsync();
         aes.GenerateIV();
 
         using var encryptor = aes.CreateEncryptor();
@@ -144,10 +155,10 @@ public class KeyManagementService
         return ms.ToArray();
     }
 
-    private byte[] DecryptPrivateKey(byte[] encryptedPrivateKey)
+    private async Task<byte[]> DecryptPrivateKeyAsync(byte[] encryptedPrivateKey)
     {
         using Aes aes = Aes.Create();
-        aes.Key = DeriveKeyFromPassphrase();
+        aes.Key = await DeriveKeyFromPassphraseAsync();
 
         using var ms = new MemoryStream(encryptedPrivateKey);
         var iv = new byte[16];
@@ -162,9 +173,10 @@ public class KeyManagementService
         return decrypted.ToArray();
     }
 
-    private byte[] DeriveKeyFromPassphrase()
+    private Task<byte[]> DeriveKeyFromPassphraseAsync()
     {
-        using var sha256 = SHA256.Create();
-        return sha256.ComputeHash(Encoding.UTF8.GetBytes(Passphrase));
+        return Task.FromResult(
+            SHA256.HashData(Encoding.UTF8.GetBytes(Passphrase))
+        );
     }
 }

@@ -1,6 +1,4 @@
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
+using System.ComponentModel.DataAnnotations;
 using CertificateAuthorityServer.Utilities;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,37 +16,36 @@ public class CertificateController : ControllerBase
     }
 
     [HttpPost("sign")]
-    public IActionResult Sign([FromBody] string data)
+    public async Task<IActionResult> Sign([FromBody] string data)
     {
         if (string.IsNullOrEmpty(data))
             return BadRequest("Data to sign cannot be empty.");
 
-        var signature = _keyManagementService.SignData(data);
+        var signature = await _keyManagementService.SignDataAsync(data);
         return Ok(new { Signature = Convert.ToBase64String(signature) });
     }
 
     [HttpPost("verify")]
-    public IActionResult Verify([FromBody] VerifyRequest request)
+    public async Task<IActionResult> Verify([FromBody] VerifyRequest request)
     {
         if (string.IsNullOrEmpty(request.OriginalData) || string.IsNullOrEmpty(request.Signature))
             return BadRequest("Original data and signature cannot be empty.");
 
         byte[] signatureBytes = Convert.FromBase64String(request.Signature);
-        bool isValid = _keyManagementService.VerifySignature(request.OriginalData, signatureBytes);
+        bool isValid = await _keyManagementService.VerifySignatureAsync(request.OriginalData, signatureBytes);
+        
         return Ok(new { IsValid = isValid });
     }
 
     [HttpPost("generate-certificate")]
-    public IActionResult GenerateCertificate([FromBody] CertificateRequest request)
+    public async Task<IActionResult> GenerateCertificate([FromBody] CertificateRequest request)
     {
         if (request == null || string.IsNullOrEmpty(request.ClientPublicKey))
-        {
             return BadRequest("Invalid request. A client public key is required.");
-        }
 
         try
         {
-            var certificate = _keyManagementService.GenerateCertificate(request);
+            var certificate = await _keyManagementService.GenerateCertificateAsync(request);
             return Ok(certificate);
         }
         catch (ArgumentException ex)
@@ -58,16 +55,14 @@ public class CertificateController : ControllerBase
     }
 
     [HttpPost("validate-certificate")]
-    public IActionResult ValidateCertificate([FromBody] Certificate certificate)
+    public async Task<IActionResult> ValidateCertificate([FromBody] Certificate certificate)
     {
         if (certificate == null || string.IsNullOrEmpty(certificate.Signature))
-        {
             return BadRequest("Invalid certificate. A valid signature is required.");
-        }
 
         try
         {
-            bool isValid = _keyManagementService.ValidateCertificate(certificate);
+            bool isValid = await _keyManagementService.ValidateCertificateAsync(certificate);
             return Ok(new { IsValid = isValid });
         }
         catch (Exception ex)
@@ -79,23 +74,42 @@ public class CertificateController : ControllerBase
 
 public class VerifyRequest
 {
-    public string OriginalData { get; set; }
-    public string Signature { get; set; }
+    [Required]
+    public string OriginalData { get; set; } = string.Empty;
+
+    [Required]
+    public string Signature { get; set; } = string.Empty;
 }
 
 public class CertificateRequest
 {
-    public string IssuedTo { get; set; }
+    [Required]
+    public string IssuedTo { get; set; } = string.Empty;
+
+    [Required]
     public DateTime Expiry { get; set; }
-    public string ClientPublicKey { get; set; } // Base64-encoded client public key
+
+    [Required]
+    public string ClientPublicKey { get; set; } = string.Empty; // Base64-encoded client public key
 }
 
 public class Certificate
 {
-    public string IssuedTo { get; set; }
-    public string IssuedFrom { get; set; }
+    [Required]
+    public string IssuedTo { get; set; } = string.Empty;
+
+    [Required]
+    public string IssuedFrom { get; set; } = string.Empty;
+
+    [Required]
     public DateTime IssuedAt { get; set; }
+
+    [Required]
     public DateTime Expiry { get; set; }
-    public string ClientPublicKey { get; set; }
-    public string Signature { get; set; } // CA's signature for the certificate
+
+    [Required]
+    public string ClientPublicKey { get; set; } = string.Empty;
+
+    [Required]
+    public string Signature { get; set; } = string.Empty; // CA's signature for the certificate
 }
