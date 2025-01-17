@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Shared.Encryptions;
 using Attachment = LegalDocumentManager.Data.Attachment;
 
 namespace LegalDocumentManager.Controllers;
@@ -22,11 +23,14 @@ public class AttachmentController : Controller
     [HttpGet]
     public async Task<IActionResult> Upload()
     {
+        // Pass the Public Key to the View
+        ViewData["PublicKey"] = Constant.Keys.Values.FirstOrDefault();
+
         return await Task.FromResult(View());
     }
 
     [HttpPost]
-    public async Task<IActionResult> Upload(IFormFile file)
+    public async Task<IActionResult> Upload([FromForm] string encryptedFile, [FromForm] string fileName)
     {
         try
         {
@@ -38,11 +42,15 @@ public class AttachmentController : Controller
                 return RedirectToAction(nameof(AccountController.Login), "Account");
             }
 
-            if (file is null || file.Length == 0)
+            if (string.IsNullOrWhiteSpace(encryptedFile) || string.IsNullOrWhiteSpace(fileName))
             {
                 TempData["Error"] = "Please select a valid file.";
                 return View();
             }
+
+            var encryptionService = new EncryptionAES(Constant.key);
+            var decryptedFileString = await encryptionService.DecryptAsync(encryptedFile);
+            var decryptedFile = Convert.FromBase64String(decryptedFileString);
 
             var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
             if (!Directory.Exists(uploadsPath))
@@ -50,22 +58,16 @@ public class AttachmentController : Controller
                 Directory.CreateDirectory(uploadsPath);
             }
 
-            var fileName = file.FileName.Split('.').First() 
-                + Guid.NewGuid().ToString() 
-                + '.' 
-                + file.FileName.Split('.').Last();
-            
-            var filePath = Path.Combine(uploadsPath, fileName);
-            
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
+            var fileNameToStore = Path.GetFileNameWithoutExtension(fileName) + Guid.NewGuid().ToString() + Path.GetExtension(fileName);
+            var filePath = Path.Combine(uploadsPath, fileNameToStore);
+
+            // Save the decrypted file
+            await System.IO.File.WriteAllBytesAsync(filePath, decryptedFile);
 
             var attachment = new Attachment
             {
                 FilePath = $"/uploads/{fileName}",
-                FileName = file.FileName,
+                FileName = fileNameToStore,
                 UserId = user.Id
             };
 
@@ -81,6 +83,7 @@ public class AttachmentController : Controller
             return View();
         }
     }
+
 
     [HttpGet]
     public async Task<IActionResult> List(string searchNationalNumber)
@@ -147,5 +150,4 @@ public class AttachmentController : Controller
         TempData["Success"] = "File deleted successfully.";
         return RedirectToAction(nameof(List));
     }
-
 }

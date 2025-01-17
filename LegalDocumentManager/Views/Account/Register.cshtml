@@ -1,7 +1,4 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-
+﻿@page
 @model RegisterViewModel
 @if (TempData["Error"] is not null)
 {
@@ -10,40 +7,52 @@
     </div>
 }
 
+
+<h2>Register</h2>
+
 <form asp-action="Register" method="post">
-    <label>Full Name</label>
-    <input asp-for="FullName" class="form-control" />
-    <span asp-validation-for="FullName" class="text-danger"></span>
+    <div class="form-group">
+        <label asp-for="FullName">Full Name</label>
+        <input type="text" class="form-control" id="FullName" name="FullName" asp-for="FullName" />
+        <span asp-validation-for="FullName" class="text-danger"></span>
+    </div>
 
-    <label>National Number</label>
-    <input asp-for="NationalNumber" class="form-control" />
-    <span asp-validation-for="NationalNumber" class="text-danger"></span>
+    <div class="form-group">
+        <label asp-for"NationalNumber">National Number</label>
+        <input type="text" class="form-control" id="NationalNumber" name="NationalNumber" asp-for="NationalNumber" />
+        <span asp-validation-for="NationalNumber" class="text-danger"></span>
+    </div>
 
-    <label>Phone Number</label>
-    <input asp-for="PhoneNumber" class="form-control" />
-    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+    <div class="form-group">
+        <label asp-for="PhoneNumber">Phone Number</label>
+        <input type="text" class="form-control" id="PhoneNumber" name="PhoneNumber" asp-for="PhoneNumber" />
+        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+    </div>
 
-    <label>Birthday</label>
-    <input asp-for="Birthday" type="date" class="form-control" />
-    <span asp-validation-for="Birthday" class="text-danger"></span>
+    <div class="form-group">
+        <label asp-for="Birthday">Birthday</label>
+        <input type="date" class="form-control" id="Birthday" name="Birthday" asp-for="Birthday" />
+        <span asp-validation-for="Birthday" class="text-danger"></span>
+    </div>
 
-    <label>Password</label>
-    <input asp-for="Password" type="password" class="form-control" />
-    <span asp-validation-for="Password" class="text-danger"></span>
+    <div class="form-group">
+        <label asp-for="Password">Password</label>
+        <input type="password" class="form-control" id="Password" name="Password" asp-for="Password" />
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
 
-    <label>Confirm Password</label>
-    <input asp-for="ConfirmPassword" type="password" class="form-control" />
-    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+    <div class="form-group">
+        <label asp-for="ConfirmPassword">Confirm Password</label>
+        <input type="password" class="form-control" id="ConfirmPassword" name="ConfirmPassword" asp-for="ConfirmPassword" />
+        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+    </div>
 
-    <label>Government Account</label>
-    <input asp-for="IsGovernmentAccount" type="checkbox" class="form-check-input" />
+    <div class="form-group">
+        <label asp-for="IsGovernmentAccount">Government Account</label>
+        <input type="checkbox" id="IsGovernmentAccount" name="IsGovernmentAccount" asp-for="IsGovernmentAccount" />
+    </div>
+
+    <input type="hidden" id="PublicKey" name="PublicKey" asp-for="PublicKey" value="@ViewData["PublicKey"]" />
 
     <button type="submit" class="btn btn-primary">Register</button>
 </form>
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}
-

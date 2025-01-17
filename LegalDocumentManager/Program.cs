@@ -48,6 +48,8 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
+Constant.InitializeKeys();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -59,11 +61,11 @@ else
     app.UseHsts();
 }
 
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    await ApplicationDbInitializer.SeedUsersAndRolesAsync(services);
-}
+//using (var scope = app.Services.CreateScope())
+//{
+//    var services = scope.ServiceProvider;
+//    await ApplicationDbInitializer.SeedUsersAndRolesAsync(services);
+//}
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

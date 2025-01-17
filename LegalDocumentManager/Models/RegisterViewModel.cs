@@ -29,4 +29,7 @@ public class RegisterViewModel
     public required string ConfirmPassword { get; set; }
 
     public bool IsGovernmentAccount { get; set; }
+
+    [Required]
+    public required string PublicKey { get; set; }
 }

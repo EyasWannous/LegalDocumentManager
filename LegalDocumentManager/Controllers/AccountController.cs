@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Encryptions;
 
 namespace LegalDocumentManager.Controllers;
 
@@ -21,6 +22,17 @@ public class AccountController : Controller
     [HttpGet]
     public IActionResult Login()
     {
+        // Generate RSA Key Pair
+        var (publicKey, privateKey) = RSAKeyGenerator.GenerateKeys();
+
+        // Pass the Public Key to the View
+        ViewData["PublicKey"] = publicKey;
+
+        TempData["Key"] = AsymmetricEncryptionService.Encrypt(Constant.key, publicKey);
+
+        // The Private Key should not be stored server-side. It will be stored in the client's localStorage.
+        TempData["PrivateKey"] = privateKey; // Optional for debugging; avoid in production.
+
         return View();
     }
 
@@ -30,7 +42,6 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
         {
             TempData["Error"] = "Invalid form submission.";
-
             return View(model);
         }
 
@@ -38,16 +49,20 @@ public class AccountController : Controller
         if (user is null)
         {
             TempData["Error"] = "User Not Found.";
-            
             return View(model);
         }
 
         var result = await _signInManager.PasswordSignInAsync(user.UserName!, model.Password, model.RememberMe, false);
         if (!result.Succeeded)
         {
-            TempData["Error"] = "Natoinal Number or password are incorrect";
-            
+            TempData["Error"] = "National Number or password are incorrect";
             return View(model);
+        }
+
+        if (!string.IsNullOrEmpty(model.PublicKey))
+        {
+            user.ClientPublicKey = model.PublicKey;
+            await _userManager.UpdateAsync(user);
         }
 
         await HttpContext.SignInAsync(
@@ -58,9 +73,21 @@ public class AccountController : Controller
         return RedirectToAction("Index", "Home");
     }
 
+
     [HttpGet]
     public IActionResult Register()
     {
+        // Generate RSA Key Pair
+        var (publicKey, privateKey) = RSAKeyGenerator.GenerateKeys();
+
+        // Pass the Public Key to the View
+        ViewData["PublicKey"] = publicKey;
+
+        TempData["Key"] = AsymmetricEncryptionService.Encrypt(Constant.key, publicKey);
+
+        // The Private Key should not be stored server-side. It will be stored in the client's localStorage.
+        TempData["PrivateKey"] = privateKey; // Optional for debugging; avoid in production.
+
         return View();
     }
 
@@ -70,38 +97,35 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
         {
             TempData["Error"] = "Invalid form submission.";
-
             return View(model);
         }
 
-        ApplicationUser user;
-        if (model.IsGovernmentAccount)
-        {
-            user = new GovernmentAccount
+        ApplicationUser user = model.IsGovernmentAccount
+            ? new GovernmentAccount
+            {
+                UserName = model.NationalNumber,
+                Email = model.NationalNumber,
+                PhoneNumber = model.PhoneNumber,
+                FullName = model.FullName,
+            }
+            : new ApplicationUser
             {
                 UserName = model.NationalNumber,
                 Email = model.NationalNumber,
                 PhoneNumber = model.PhoneNumber,
                 FullName = model.FullName,
             };
-        }
-        else
+
+        if (!string.IsNullOrEmpty(model.PublicKey))
         {
-            user = new ApplicationUser
-            {
-                UserName = model.NationalNumber,
-                Email = model.NationalNumber,
-                PhoneNumber = model.PhoneNumber,
-                FullName = model.FullName
-            };
+            user.ClientPublicKey = model.PublicKey;
         }
-        
+
         var result = await _userManager.CreateAsync(user, model.Password);
 
         if (!result.Succeeded)
         {
             TempData["Error"] = result.Errors.Select(x => x.Description).ToList();
-
             return View(model);
         }
 
@@ -114,6 +138,7 @@ public class AccountController : Controller
 
         return RedirectToAction("Index", "Home");
     }
+
 
     [HttpPost]
     public async Task<IActionResult> Logout()
