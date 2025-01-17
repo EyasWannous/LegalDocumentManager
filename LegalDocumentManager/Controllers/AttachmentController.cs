@@ -24,7 +24,7 @@ public class AttachmentController : Controller
     public async Task<IActionResult> Upload()
     {
         // Pass the Public Key to the View
-        ViewData["PublicKey"] = Constant.Keys.Values.FirstOrDefault();
+        ViewData["PublicKey"] = Constant.ASymmetricKeys.Values.FirstOrDefault();
 
         return await Task.FromResult(View());
     }
@@ -48,7 +48,7 @@ public class AttachmentController : Controller
                 return View();
             }
 
-            var encryptionService = new EncryptionAES(Constant.key);
+            var encryptionService = new EncryptionAES(Constant.AESKey);
             var decryptedFileString = await encryptionService.DecryptAsync(encryptedFile);
             var decryptedFile = Convert.FromBase64String(decryptedFileString);
 

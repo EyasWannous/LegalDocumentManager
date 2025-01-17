@@ -9,8 +9,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LegalDocumentManager", "Leg
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{568268C9-AF0E-4224-981F-490351C7151D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LegalDocumentManager.Client", "LegalDocumentManager.Client\LegalDocumentManager.Client.csproj", "{6635DD1C-98E6-4E5E-A452-A5EA5BEB7507}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,10 +27,6 @@ Global
 		{568268C9-AF0E-4224-981F-490351C7151D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{568268C9-AF0E-4224-981F-490351C7151D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{568268C9-AF0E-4224-981F-490351C7151D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6635DD1C-98E6-4E5E-A452-A5EA5BEB7507}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6635DD1C-98E6-4E5E-A452-A5EA5BEB7507}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6635DD1C-98E6-4E5E-A452-A5EA5BEB7507}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6635DD1C-98E6-4E5E-A452-A5EA5BEB7507}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

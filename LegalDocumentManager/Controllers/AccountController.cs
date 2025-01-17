@@ -4,11 +4,13 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Encryptions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LegalDocumentManager.Controllers;
 
-public class AccountController : Controller
+[ApiController]
+[Route("[Controller]")]
+public class AccountController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
@@ -19,45 +21,33 @@ public class AccountController : Controller
         _signInManager = signInManager;
     }
 
-    [HttpGet]
-    public IActionResult Login()
+    //[HttpGet]
+    //public IActionResult Login()
+    //{
+    //    // Generate RSA Key Pair
+    //    var (publicKey, privateKey) = RSAKeyGenerator.GenerateKeys();
+
+    //    // Pass the Public Key to the View
+    //    ViewData["PublicKey"] = publicKey;
+
+    //    TempData["Key"] = AsymmetricEncryptionService.Encrypt(Constant.AESKey, publicKey);
+
+    //    // The Private Key should not be stored server-side. It will be stored in the client's localStorage.
+    //    TempData["PrivateKey"] = privateKey; // Optional for debugging; avoid in production.
+
+    //    return View();
+    //}
+
+    [HttpPost("Login")]
+    public async Task<IActionResult> Login([FromBody] LoginViewModel model)
     {
-        // Generate RSA Key Pair
-        var (publicKey, privateKey) = RSAKeyGenerator.GenerateKeys();
-
-        // Pass the Public Key to the View
-        ViewData["PublicKey"] = publicKey;
-
-        TempData["Key"] = AsymmetricEncryptionService.Encrypt(Constant.key, publicKey);
-
-        // The Private Key should not be stored server-side. It will be stored in the client's localStorage.
-        TempData["PrivateKey"] = privateKey; // Optional for debugging; avoid in production.
-
-        return View();
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Login(LoginViewModel model)
-    {
-        if (!ModelState.IsValid)
-        {
-            TempData["Error"] = "Invalid form submission.";
-            return View(model);
-        }
-
         var user = await _userManager.FindByEmailAsync(model.NationalNumber);
         if (user is null)
-        {
-            TempData["Error"] = "User Not Found.";
-            return View(model);
-        }
+            return BadRequest("User Not Found");
 
         var result = await _signInManager.PasswordSignInAsync(user.UserName!, model.Password, model.RememberMe, false);
         if (!result.Succeeded)
-        {
-            TempData["Error"] = "National Number or password are incorrect";
-            return View(model);
-        }
+            return BadRequest("National Number or password are incorrect");
 
         if (!string.IsNullOrEmpty(model.PublicKey))
         {
@@ -74,32 +64,26 @@ public class AccountController : Controller
     }
 
 
-    [HttpGet]
-    public IActionResult Register()
+    //[HttpGet]
+    //public IActionResult Register()
+    //{
+    //    // Generate RSA Key Pair
+    //    var (publicKey, privateKey) = RSAKeyGenerator.GenerateKeys();
+
+    //    // Pass the Public Key to the View
+    //    ViewData["PublicKey"] = publicKey;
+
+    //    TempData["Key"] = AsymmetricEncryptionService.Encrypt(Constant.AESKey, publicKey);
+
+    //    // The Private Key should not be stored server-side. It will be stored in the client's localStorage.
+    //    TempData["PrivateKey"] = privateKey; // Optional for debugging; avoid in production.
+
+    //    return View();
+    //}
+
+    [HttpPost("Register")]
+    public async Task<IActionResult> Register([FromBody] RegisterViewModel model)
     {
-        // Generate RSA Key Pair
-        var (publicKey, privateKey) = RSAKeyGenerator.GenerateKeys();
-
-        // Pass the Public Key to the View
-        ViewData["PublicKey"] = publicKey;
-
-        TempData["Key"] = AsymmetricEncryptionService.Encrypt(Constant.key, publicKey);
-
-        // The Private Key should not be stored server-side. It will be stored in the client's localStorage.
-        TempData["PrivateKey"] = privateKey; // Optional for debugging; avoid in production.
-
-        return View();
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Register(RegisterViewModel model)
-    {
-        if (!ModelState.IsValid)
-        {
-            TempData["Error"] = "Invalid form submission.";
-            return View(model);
-        }
-
         ApplicationUser user = model.IsGovernmentAccount
             ? new GovernmentAccount
             {
@@ -117,17 +101,11 @@ public class AccountController : Controller
             };
 
         if (!string.IsNullOrEmpty(model.PublicKey))
-        {
             user.ClientPublicKey = model.PublicKey;
-        }
 
         var result = await _userManager.CreateAsync(user, model.Password);
-
         if (!result.Succeeded)
-        {
-            TempData["Error"] = result.Errors.Select(x => x.Description).ToList();
-            return View(model);
-        }
+            return BadRequest(result.Errors.Select(x => x.Description).ToList());
 
         await _signInManager.SignInAsync(user, isPersistent: false);
 
@@ -140,12 +118,19 @@ public class AccountController : Controller
     }
 
 
-    [HttpPost]
+    [HttpGet("Logout")]
     public async Task<IActionResult> Logout()
     {
         await _signInManager.SignOutAsync();
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
         return RedirectToAction("Index", "Home");
+    }
+
+    [Authorize]
+    [HttpGet("PublicKey")]
+    public Task<IActionResult> GetPublicKey()
+    {
+        return Task.FromResult<IActionResult>(Ok(Constant.ASymmetricKeys.Values.First()));
     }
 }
