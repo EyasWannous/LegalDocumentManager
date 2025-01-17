@@ -1,5 +1,4 @@
 ﻿using CertificateAuthorityServer.Controllers;
-using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -56,9 +55,7 @@ public class KeyManagementService
     {
         // Check if the certificate has expired
         if (DateTime.UtcNow < certificate.IssuedAt || DateTime.UtcNow > certificate.Expiry)
-        {
             return false;
-        }
 
         // Serialize the certificate data (excluding the signature) to JSON
         var certificateData = System.Text.Json.JsonSerializer.Serialize(new
@@ -71,35 +68,29 @@ public class KeyManagementService
         });
 
         // Verify the signature
-        using (RSA rsa = GetPublicKey())
-        {
-            byte[] certificateBytes = Encoding.UTF8.GetBytes(certificateData);
-            byte[] signatureBytes = Convert.FromBase64String(certificate.Signature);
-            return rsa.VerifyData(certificateBytes, signatureBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-        }
+        using RSA rsa = GetPublicKey();
+        byte[] certificateBytes = Encoding.UTF8.GetBytes(certificateData);
+        byte[] signatureBytes = Convert.FromBase64String(certificate.Signature);
+        return rsa.VerifyData(certificateBytes, signatureBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
     }
 
     public void GenerateKeyPair()
     {
-        using (RSA rsa = RSA.Create(2048)) // Generate a 2048-bit RSA key pair
-        {
-            // Export public key
-            var publicKey = rsa.ExportRSAPublicKey();
-            File.WriteAllBytes(PublicKeyPath, publicKey);
+        using RSA rsa = RSA.Create(2048); // Generate a 2048-bit RSA key pair
+                                          // Export public key
+        var publicKey = rsa.ExportRSAPublicKey();
+        File.WriteAllBytes(PublicKeyPath, publicKey);
 
-            // Export and encrypt private key
-            var privateKey = rsa.ExportRSAPrivateKey();
-            var encryptedPrivateKey = EncryptPrivateKey(privateKey);
-            File.WriteAllBytes(PrivateKeyPath, encryptedPrivateKey);
-        }
+        // Export and encrypt private key
+        var privateKey = rsa.ExportRSAPrivateKey();
+        var encryptedPrivateKey = EncryptPrivateKey(privateKey);
+        File.WriteAllBytes(PrivateKeyPath, encryptedPrivateKey);
     }
 
     public RSA GetPrivateKey()
     {
         if (!File.Exists(PrivateKeyPath))
-        {
             throw new FileNotFoundException("Private key not found.");
-        }
 
         var encryptedPrivateKey = File.ReadAllBytes(PrivateKeyPath);
         var privateKey = DecryptPrivateKey(encryptedPrivateKey);
@@ -112,9 +103,7 @@ public class KeyManagementService
     public RSA GetPublicKey()
     {
         if (!File.Exists(PublicKeyPath))
-        {
             throw new FileNotFoundException("Public key not found.");
-        }
 
         var publicKey = File.ReadAllBytes(PublicKeyPath);
         RSA rsa = RSA.Create();
@@ -124,70 +113,57 @@ public class KeyManagementService
 
     public byte[] SignData(string dataToSign)
     {
-        using (RSA rsa = GetPrivateKey())
-        {
-            byte[] dataBytes = Encoding.UTF8.GetBytes(dataToSign);
-            return rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-        }
+        using RSA rsa = GetPrivateKey();
+        byte[] dataBytes = Encoding.UTF8.GetBytes(dataToSign);
+        return rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
     }
 
     public bool VerifySignature(string originalData, byte[] signature)
     {
-        using (RSA rsa = GetPublicKey())
-        {
-            byte[] dataBytes = Encoding.UTF8.GetBytes(originalData);
-            return rsa.VerifyData(dataBytes, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-        }
+        using RSA rsa = GetPublicKey();
+        byte[] dataBytes = Encoding.UTF8.GetBytes(originalData);
+        return rsa.VerifyData(dataBytes, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
     }
 
     private byte[] EncryptPrivateKey(byte[] privateKey)
     {
-        using (Aes aes = Aes.Create())
-        {
-            aes.Key = DeriveKeyFromPassphrase();
-            aes.GenerateIV();
+        using Aes aes = Aes.Create();
+        aes.Key = DeriveKeyFromPassphrase();
+        aes.GenerateIV();
 
-            using (var encryptor = aes.CreateEncryptor())
-            using (var ms = new MemoryStream())
-            {
-                ms.Write(aes.IV, 0, aes.IV.Length); // Write IV to the beginning
-                using (var cryptoStream = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
-                {
-                    cryptoStream.Write(privateKey, 0, privateKey.Length);
-                }
-                return ms.ToArray();
-            }
+        using var encryptor = aes.CreateEncryptor();
+        using var ms = new MemoryStream();
+
+        ms.Write(aes.IV, 0, aes.IV.Length); // Write IV to the beginning
+        using (var cryptoStream = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+        {
+            cryptoStream.Write(privateKey, 0, privateKey.Length);
         }
+
+        return ms.ToArray();
     }
 
     private byte[] DecryptPrivateKey(byte[] encryptedPrivateKey)
     {
-        using (Aes aes = Aes.Create())
-        {
-            aes.Key = DeriveKeyFromPassphrase();
+        using Aes aes = Aes.Create();
+        aes.Key = DeriveKeyFromPassphrase();
 
-            using (var ms = new MemoryStream(encryptedPrivateKey))
-            {
-                var iv = new byte[16];
-                ms.Read(iv, 0, iv.Length); // Read IV from the beginning
-                aes.IV = iv;
+        using var ms = new MemoryStream(encryptedPrivateKey);
+        var iv = new byte[16];
+        ms.Read(iv, 0, iv.Length); // Read IV from the beginning
+        aes.IV = iv;
 
-                using (var decryptor = aes.CreateDecryptor())
-                using (var cryptoStream = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
-                {
-                    var decrypted = new MemoryStream();
-                    cryptoStream.CopyTo(decrypted);
-                    return decrypted.ToArray();
-                }
-            }
-        }
+        using var decryptor = aes.CreateDecryptor();
+        using var cryptoStream = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
+        
+        var decrypted = new MemoryStream();
+        cryptoStream.CopyTo(decrypted);
+        return decrypted.ToArray();
     }
 
     private byte[] DeriveKeyFromPassphrase()
     {
-        using (var sha256 = SHA256.Create())
-        {
-            return sha256.ComputeHash(Encoding.UTF8.GetBytes(Passphrase));
-        }
+        using var sha256 = SHA256.Create();
+        return sha256.ComputeHash(Encoding.UTF8.GetBytes(Passphrase));
     }
 }
