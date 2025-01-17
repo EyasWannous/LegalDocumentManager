@@ -45,12 +45,12 @@ public class CertificateController : ControllerBase
     [HttpPost("generate-certificate")]
     public async Task<IActionResult> GenerateCertificate([FromBody] CertificateRequest request)
     {
-        if (request == null || string.IsNullOrEmpty(request.ClientPublicKey))
+        if (request is null || string.IsNullOrEmpty(request.ClientPublicKey))
             return BadRequest("Invalid request. A client public key is required.");
 
         var serverCert = await _context.ServerCertificates.FirstOrDefaultAsync(x => x.Host == HttpContext.Request.Host.Value);
 
-        if (serverCert == null)
+        if (serverCert is null)
             return BadRequest();
 
         try

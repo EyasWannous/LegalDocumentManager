@@ -14,6 +14,8 @@ public class ApplicationDbContext(DbContextOptions options) : DbContext(options)
 
         modelBuilder.Entity<ServerCertificate>(model =>
         {
+            model.HasKey(x => x.Id);
+
             model.Property(x => x.Certificate)
                 .HasConversion(
                     certificate => certificate == null ? string.Empty : certificate.ToString(),

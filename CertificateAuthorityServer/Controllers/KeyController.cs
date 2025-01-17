@@ -26,11 +26,13 @@ public class KeyController : ControllerBase
     {
         try
         {
-            await _context.ServerCertificates.AddAsync(new ServerCertificate
-            {
-                Host = HttpContext.Request.Host.Value,
-                PublicKey = publicKey,
-            });
+            await _context.ServerCertificates.AddAsync(
+                new ServerCertificate
+                {
+                    Host = HttpContext.Request.Host.Value,
+                    PublicKey = publicKey,
+                }
+            );
 
             await _context.SaveChangesAsync();
 
@@ -51,7 +53,7 @@ public class KeyController : ControllerBase
     {
         var serverCert = await _context.ServerCertificates.FirstOrDefaultAsync(x => x.Host == HttpContext.Request.Host.Value);
 
-        if (serverCert == null)
+        if (serverCert is null)
             return BadRequest();
 
         using RSA rsa = await _keyManagementService.GetPrivateKeyAsync();
