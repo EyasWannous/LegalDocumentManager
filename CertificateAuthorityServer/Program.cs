@@ -1,4 +1,5 @@
 using CertificateAuthorityServer.Utilities;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<KeyManagementService>();
+
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseInMemoryDatabase("CADB")
+);
+
 
 var app = builder.Build();
 

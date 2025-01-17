@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Shared.Encryptions;
 
-public class AsymmetricEncryptionService
+public static class AsymmetricEncryptionService
 {
     // Encrypt a message using the recipient's public key
     public static string Encrypt(string plainText, string publicKey)

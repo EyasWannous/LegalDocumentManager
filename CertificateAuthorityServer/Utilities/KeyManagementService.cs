@@ -31,7 +31,7 @@ public class KeyManagementService
             ClientPublicKey = request.ClientPublicKey
         };
 
-        var certificateData = JsonSerializer.Serialize(new
+        string certificateData = JsonSerializer.Serialize(new
         {
             certificate.IssuedTo,
             certificate.IssuedFrom,
@@ -57,7 +57,7 @@ public class KeyManagementService
             return false;
 
         // Serialize the certificate data (excluding the signature) to JSON
-        var certificateData = JsonSerializer.Serialize(new
+        string certificateData = JsonSerializer.Serialize(new
         {
             certificate.IssuedTo,
             certificate.IssuedFrom,
@@ -83,12 +83,12 @@ public class KeyManagementService
     {
         using RSA rsa = RSA.Create(2048); // Generate a 2048-bit RSA key pair
                                           // Export public key
-        var publicKey = rsa.ExportRSAPublicKey();
+        byte[] publicKey = rsa.ExportRSAPublicKey();
         File.WriteAllBytes(PublicKeyPath, publicKey);
 
         // Export and encrypt private key
-        var privateKey = rsa.ExportRSAPrivateKey();
-        var encryptedPrivateKey = await EncryptPrivateKeyAsync(privateKey);
+        byte[] privateKey = rsa.ExportRSAPrivateKey();
+        byte[] encryptedPrivateKey = await EncryptPrivateKeyAsync(privateKey);
         File.WriteAllBytes(PrivateKeyPath, encryptedPrivateKey);
     }
 
@@ -97,8 +97,8 @@ public class KeyManagementService
         if (!File.Exists(PrivateKeyPath))
             throw new FileNotFoundException("Private key not found.");
 
-        var encryptedPrivateKey = File.ReadAllBytes(PrivateKeyPath);
-        var privateKey = await DecryptPrivateKeyAsync(encryptedPrivateKey);
+        byte[] encryptedPrivateKey = File.ReadAllBytes(PrivateKeyPath);
+        byte[] privateKey = await DecryptPrivateKeyAsync(encryptedPrivateKey);
 
         RSA rsa = RSA.Create();
         rsa.ImportRSAPrivateKey(privateKey, out _);
@@ -111,7 +111,7 @@ public class KeyManagementService
         if (!File.Exists(PublicKeyPath))
             throw new FileNotFoundException("Public key not found.");
 
-        var publicKey = File.ReadAllBytes(PublicKeyPath);
+        byte[] publicKey = File.ReadAllBytes(PublicKeyPath);
         RSA rsa = RSA.Create();
         rsa.ImportRSAPublicKey(publicKey, out _);
 

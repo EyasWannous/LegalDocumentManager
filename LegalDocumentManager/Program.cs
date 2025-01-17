@@ -9,7 +9,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseInMemoryDatabase("TestDb").EnableSensitiveDataLogging()
+    options.UseInMemoryDatabase("TestDb")
 );
 
 builder.Services.Configure<IISServerOptions>(options =>
