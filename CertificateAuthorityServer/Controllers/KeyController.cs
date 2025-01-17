@@ -22,7 +22,7 @@ public class KeyController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetPublicKey([FromBody] string publicKey)
+    public async Task<IActionResult> GetPublicKey([FromQuery] string publicKey)
     {
         try
         {
@@ -31,6 +31,8 @@ public class KeyController : ControllerBase
                 Host = HttpContext.Request.Host.Value,
                 PublicKey = publicKey,
             });
+
+            await _context.SaveChangesAsync();
 
             using RSA rsa = await _keyManagementService.GetPublicKeyAsync();
 

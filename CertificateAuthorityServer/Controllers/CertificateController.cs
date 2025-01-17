@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using CertificateAuthorityServer.Data;
 using CertificateAuthorityServer.Utilities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CertificateAuthorityServer.Controllers;
 
@@ -10,10 +12,12 @@ namespace CertificateAuthorityServer.Controllers;
 public class CertificateController : ControllerBase
 {
     private readonly KeyManagementService _keyManagementService;
+    private readonly ApplicationDbContext _context;
 
-    public CertificateController(KeyManagementService keyManagementService)
+    public CertificateController(KeyManagementService keyManagementService, ApplicationDbContext context)
     {
         _keyManagementService = keyManagementService;
+        _context = context;
     }
 
     [HttpPost("sign")]
@@ -44,10 +48,18 @@ public class CertificateController : ControllerBase
         if (request == null || string.IsNullOrEmpty(request.ClientPublicKey))
             return BadRequest("Invalid request. A client public key is required.");
 
+        var serverCert = await _context.ServerCertificates.FirstOrDefaultAsync(x => x.Host == HttpContext.Request.Host.Value);
+
+        if (serverCert == null)
+            return BadRequest();
+
         try
         {
-            var certificate = await _keyManagementService.GenerateCertificateAsync(request);
-            return Ok(certificate);
+            serverCert.Certificate = await _keyManagementService.GenerateCertificateAsync(request);
+
+            await _context.SaveChangesAsync();
+             
+            return Ok(serverCert.Certificate);
         }
         catch (ArgumentException ex)
         {
