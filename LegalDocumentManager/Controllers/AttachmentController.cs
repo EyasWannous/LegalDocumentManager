@@ -9,7 +9,9 @@ using Attachment = LegalDocumentManager.Data.Attachment;
 namespace LegalDocumentManager.Controllers;
 
 [Authorize]
-public class AttachmentController : Controller
+[ApiController]
+[Route("api/[controller]")]
+public class AttachmentController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
@@ -20,17 +22,8 @@ public class AttachmentController : Controller
         _userManager = userManager;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> Upload()
-    {
-        // Pass the Public Key to the View
-        ViewData["PublicKey"] = Constant.ASymmetricKeys.Values.FirstOrDefault();
-
-        return await Task.FromResult(View());
-    }
-
     [HttpPost]
-    public async Task<IActionResult> Upload([FromForm] string encryptedFile, [FromForm] string fileName)
+    public async Task<IActionResult> Upload([FromBody] string encryptedFile, [FromBody] string fileName)
     {
         try
         {
@@ -38,14 +31,12 @@ public class AttachmentController : Controller
 
             if (user is null)
             {
-                TempData["Error"] = "You must be logged in to upload files.";
-                return RedirectToAction(nameof(AccountController.Login), "Account");
+                return BadRequest("");
             }
 
             if (string.IsNullOrWhiteSpace(encryptedFile) || string.IsNullOrWhiteSpace(fileName))
             {
-                TempData["Error"] = "Please select a valid file.";
-                return View();
+                return BadRequest("");
             }
 
             var encryptionService = new EncryptionAES(Constant.AESKey);
@@ -61,7 +52,6 @@ public class AttachmentController : Controller
             var fileNameToStore = Path.GetFileNameWithoutExtension(fileName) + Guid.NewGuid().ToString() + Path.GetExtension(fileName);
             var filePath = Path.Combine(uploadsPath, fileNameToStore);
 
-            // Save the decrypted file
             await System.IO.File.WriteAllBytesAsync(filePath, decryptedFile);
 
             var attachment = new Attachment
@@ -74,13 +64,11 @@ public class AttachmentController : Controller
             _context.Attachments.Add(attachment);
             await _context.SaveChangesAsync();
 
-            TempData["Success"] = "File uploaded successfully.";
-            return RedirectToAction(nameof(List));
+            return Ok();
         }
         catch (Exception ex)
         {
-            TempData["Error"] = $"An error occurred: {ex.Message}";
-            return View();
+            return BadRequest($"An error occurred: {ex.Message}");
         }
     }
 
@@ -92,8 +80,7 @@ public class AttachmentController : Controller
 
         if (user is null)
         {
-            TempData["Error"] = "You must be logged in to view attachments.";
-            return RedirectToAction(nameof(AccountController.Login), "Account");
+            return Unauthorized();
         }
 
         IQueryable<Attachment> attachmentsQuery;
@@ -109,14 +96,12 @@ public class AttachmentController : Controller
             }
             var attachments = await attachmentsQuery.ToListAsync();
 
-            // Pass search query back to the view for user feedback
-            ViewData["SearchQuery"] = searchNationalNumber;
-
-            return View(attachments);
+            return Ok(attachments);
         }
+
         var userAttachments = await _context.Attachments.Where(a => a.UserId == user!.Id).ToListAsync();
 
-        return View(userAttachments);
+        return Ok(userAttachments);
     }
 
     public async Task<IActionResult> Download(int id)
@@ -126,7 +111,6 @@ public class AttachmentController : Controller
             return NotFound();
 
         var filePath = Path.Combine(Directory.GetCurrentDirectory(), $"wwwroot/{attachment.FilePath}");
-        //var filePath = attachment.FilePath;
         var fileName = Path.GetFileName(filePath);
         var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
 
@@ -147,7 +131,6 @@ public class AttachmentController : Controller
         _context.Attachments.Remove(attachment);
         await _context.SaveChangesAsync();
 
-        TempData["Success"] = "File deleted successfully.";
-        return RedirectToAction(nameof(List));
+        return NoContent();
     }
 }
