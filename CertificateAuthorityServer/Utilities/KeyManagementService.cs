@@ -1,6 +1,7 @@
 ﻿using CertificateAuthorityServer.Controllers;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 namespace CertificateAuthorityServer.Utilities;
 
@@ -32,7 +33,7 @@ public class KeyManagementService
             ClientPublicKey = request.ClientPublicKey
         };
 
-        var certificateData = System.Text.Json.JsonSerializer.Serialize(new
+        var certificateData = JsonSerializer.Serialize(new
         {
             certificate.IssuedTo,
             certificate.IssuedFrom,
@@ -58,7 +59,7 @@ public class KeyManagementService
             return false;
 
         // Serialize the certificate data (excluding the signature) to JSON
-        var certificateData = System.Text.Json.JsonSerializer.Serialize(new
+        var certificateData = JsonSerializer.Serialize(new
         {
             certificate.IssuedTo,
             certificate.IssuedFrom,
