@@ -15,6 +15,15 @@ public static class AsymmetricEncryptionService
         return Convert.ToBase64String(encryptedData);
     }
 
+    public static string EncryptWithInfo(string plainText, string publicKey)
+    {
+        using var rsa = RSA.Create();
+        rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(publicKey), out _);
+
+        byte[] encryptedData = rsa.Encrypt(Encoding.UTF8.GetBytes(plainText), RSAEncryptionPadding.OaepSHA256);
+        return Convert.ToBase64String(encryptedData);
+    }
+
     // Decrypt a message using the recipient's private key
     public static string Decrypt(string cipherText, string privateKey)
     {
