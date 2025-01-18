@@ -8,26 +8,88 @@
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
-<h3>Login</h3>
+<h3 class="text-center text-primary my-4">Login</h3>
 
-<EditForm Model="@loginModel" OnValidSubmit="HandleLogin" FormName="LoginForm">
+<EditForm Model="@loginModel" OnValidSubmit="HandleLogin" class="mx-auto p-4 bg-light shadow rounded" style="max-width: 400px;">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
-    <div>
-        <label>National Number</label>
-        <InputText @bind-Value="loginModel.NationalNumber" />
+    <div class="mb-3">
+        <label class="form-label">National Number</label>
+        <InputText class="form-control" @bind-Value="loginModel.NationalNumber" />
     </div>
-    <div>
-        <label>Password</label>
-        <InputText type="password" @bind-Value="loginModel.Password" />
+    <div class="mb-3">
+        <label class="form-label">Password</label>
+        <InputText class="form-control" type="password" @bind-Value="loginModel.Password" />
     </div>
-    <div>
-        <label>Remember Me</label>
-        <InputCheckbox @bind-Value="loginModel.RememberMe" />
+    <div class="form-check mb-3">
+        <InputCheckbox class="form-check-input" @bind-Value="loginModel.RememberMe" />
+        <label class="form-check-label">Remember Me</label>
     </div>
-    <button type="submit">Login</button>
+    <button type="submit" class="btn btn-primary w-100">Login</button>
 </EditForm>
+
+<style>
+    /* .form-label { */
+    /*     font-weight: 600; */
+    /* } */
+
+    /* .btn-primary { */
+    /*     background-color: #007bff; */
+    /*     border: none; */
+    /*     transition: background-color 0.3s; */
+    /* } */
+
+    /* .btn-primary:hover { */
+    /*     background-color: #0056b3; */
+    /* } */
+
+    /* .shadow { */
+    /*     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1); */
+    /* } */
+
+    h3 {
+        color: #4a90e2;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    form {
+        max-width: 400px;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    label {
+        font-weight: bold;
+    }
+
+    input, button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    button {
+        background-color: #4a90e2;
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+    }
+
+    button:hover {
+        background-color: #357ab7;
+    }
+
+    .alert {
+        margin-top: 10px;
+    }
+</style>
+
 
 @if (!string.IsNullOrEmpty(ErrorMessage))
 {

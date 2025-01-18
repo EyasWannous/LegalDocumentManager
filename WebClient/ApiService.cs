@@ -1,7 +1,4 @@
-﻿using System.Net.Http;
-using System.Net.Http.Json;
-using System.Threading.Tasks;
-using WebClient.Models;
+﻿using WebClient.Models;
 
 namespace WebClient;
 

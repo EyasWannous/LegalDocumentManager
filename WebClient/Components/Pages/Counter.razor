@@ -1,13 +1,22 @@
 ﻿@page "/counter"
 @rendermode InteractiveServer
 
-<PageTitle>Counter</PageTitle>
+<h1 class="mt-4 text-primary">Counter</h1>
 
-<h1>Counter</h1>
+<p role="status" class="lead">Current count: <span class="badge bg-secondary">@currentCount</span></p>
 
-<p role="status">Current count: @currentCount</p>
+<button class="btn btn-primary btn-lg mt-3" @onclick="IncrementCount">Click me</button>
 
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+<style>
+    h1 {
+        font-weight: 600;
+    }
+
+    .lead {
+        font-size: 1.2rem;
+    }
+</style>
+
 
 @code {
     private int currentCount = 0;

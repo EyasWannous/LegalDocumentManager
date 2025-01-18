@@ -4,26 +4,62 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager Navigation
 
-<div class="page">
+<div class="page d-flex">
     <!-- Sidebar -->
-    <div class="sidebar">
-        <NavMenu /> <!-- Ensure NavMenu is here -->
+    <div class="sidebar bg-dark text-white p-3">
+        <NavMenu />
     </div>
 
     <!-- Main Content -->
-    <div class="main">
+    <div class="main flex-grow-1">
         <!-- Top Row with About and Logout -->
-        <div class="top-row px-4 bg-light">
-            <a class="btn btn-link" href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
-            <button class="btn btn-link ml-auto" @onclick="Logout">Logout</button>
+        <div class="top-row px-4 py-2 d-flex align-items-center bg-light shadow-sm">
+            <a class="btn btn-link text-primary" href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+            <button class="btn btn-outline-danger ml-auto" @onclick="Logout">Logout</button>
         </div>
 
         <!-- Page Content -->
-        <div class="content px-4">
+        <div class="content px-4 py-4">
             @Body
         </div>
     </div>
 </div>
+
+<style>
+    .page {
+        height: 100vh;
+        display: flex;
+        flex-direction: row;
+    }
+
+    .sidebar {
+        width: 250px;
+        min-width: 200px;
+    }
+
+    .main {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .top-row {
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .btn-link {
+        font-weight: bold;
+    }
+
+    .btn-outline-danger {
+        transition: background-color 0.3s, color 0.3s;
+    }
+
+        .btn-outline-danger:hover {
+            background-color: #dc3545;
+            color: white;
+        }
+</style>
+
 
 @code {
     private async Task Logout()
