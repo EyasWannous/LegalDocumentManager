@@ -34,6 +34,7 @@ public class KeyInitializationService : IHostedService
         var myPublicKey = Convert.ToBase64String(myPublicKeyBytes);
 
         var publicKeyResponse = await _httpClient.GetAsync($"Key?publicKey={myPublicKey}", cancellationToken);
+
         if (!publicKeyResponse.IsSuccessStatusCode)
             throw new Exception("Couldn't get public key from CA");
 
