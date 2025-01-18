@@ -22,7 +22,7 @@ public class KeyController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetPublicKey([FromQuery] string publicKey)
+    public async Task<IActionResult> ExchangePublicKeys(string publicKey)
     {
         try
         {
@@ -49,7 +49,7 @@ public class KeyController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> SendHashedSymmetricKey([FromBody] HashedSymmetricKey input)
+    public async Task<IActionResult> ExchangeHashedSymmetricKey([FromBody] HashedSymmetricKey input)
     {
         var serverCert = await _context.ServerCertificates.FirstOrDefaultAsync(x => x.Host == HttpContext.Request.Host.Value);
 
@@ -65,14 +65,6 @@ public class KeyController : ControllerBase
         serverCert.Key = symmetricKey;
 
         await _context.SaveChangesAsync();
-
-        return Ok();
-    }
-
-    [HttpGet("generate-Keys")]
-    public async Task<IActionResult> GenerateKeys()
-    {
-        await _keyManagementService.GenerateKeyPairAsync();
 
         return Ok();
     }

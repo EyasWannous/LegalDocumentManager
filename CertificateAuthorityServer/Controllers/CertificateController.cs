@@ -1,5 +1,4 @@
-using System.ComponentModel.DataAnnotations;
-using System.Text.Json;
+using CertificateAuthorityServer.Controllers.Dtos;
 using CertificateAuthorityServer.Data;
 using CertificateAuthorityServer.Utilities;
 using Microsoft.AspNetCore.Mvc;
@@ -20,15 +19,15 @@ public class CertificateController : ControllerBase
         _context = context;
     }
 
-    [HttpPost("sign")]
-    public async Task<IActionResult> Sign([FromBody] string data)
-    {
-        if (string.IsNullOrEmpty(data))
-            return BadRequest("Data to sign cannot be empty.");
+    //[HttpPost("sign")]
+    //public async Task<IActionResult> Sign([FromBody] string data)
+    //{
+    //    if (string.IsNullOrEmpty(data))
+    //        return BadRequest("Data to sign cannot be empty.");
 
-        var signature = await _keyManagementService.SignDataAsync(data);
-        return Ok(new { Signature = Convert.ToBase64String(signature) });
-    }
+    //    var signature = await _keyManagementService.SignDataAsync(data);
+    //    return Ok(new { Signature = Convert.ToBase64String(signature) });
+    //}
 
     [HttpPost("verify")]
     public async Task<IActionResult> Verify([FromBody] VerifyRequest request)
@@ -36,8 +35,14 @@ public class CertificateController : ControllerBase
         if (string.IsNullOrEmpty(request.OriginalData) || string.IsNullOrEmpty(request.Signature))
             return BadRequest("Original data and signature cannot be empty.");
 
+        var serverCert = await _context.ServerCertificates.FirstOrDefaultAsync(x => x.Host == request.Host);
+
+        if (serverCert is null  || serverCert.PublicKey is null)
+            return NotFound();
+
         byte[] signatureBytes = Convert.FromBase64String(request.Signature);
-        bool isValid = await _keyManagementService.VerifySignatureAsync(request.OriginalData, signatureBytes);
+
+        bool isValid = await _keyManagementService.VerifySignatureAsync(request.OriginalData, signatureBytes, serverCert.PublicKey);
         
         return Ok(new { IsValid = isValid });
     }
@@ -83,56 +88,22 @@ public class CertificateController : ControllerBase
             return StatusCode(500, new { Error = ex.Message });
         }
     }
-}
 
-public class VerifyRequest
-{
-    [Required]
-    public string OriginalData { get; set; } = string.Empty;
-
-    [Required]
-    public string Signature { get; set; } = string.Empty;
-}
-
-public class CertificateRequest
-{
-    [Required]
-    public string IssuedTo { get; set; } = string.Empty;
-
-    [Required]
-    public DateTime Expiry { get; set; }
-
-    [Required]
-    public string ClientPublicKey { get; set; } = string.Empty; // Base64-encoded client public key
-}
-
-public class Certificate
-{
-    [Required]
-    public string IssuedTo { get; set; } = string.Empty;
-
-    [Required]
-    public string IssuedFrom { get; set; } = string.Empty;
-
-    [Required]
-    public DateTime IssuedAt { get; set; }
-
-    [Required]
-    public DateTime Expiry { get; set; }
-
-    [Required]
-    public string ClientPublicKey { get; set; } = string.Empty;
-
-    [Required]
-    public string Signature { get; set; } = string.Empty; // CA's signature for the certificate
-
-    public override string ToString()
+    [HttpGet]
+    public async Task<IActionResult> GetHostCertificate(string host)
     {
-        return JsonSerializer.Serialize(this);
-    }
+        var certificate = await _context.ServerCertificates.FirstOrDefaultAsync(x => x.Host == host);
+        
+        if (certificate is null || certificate.Certificate is null)
+            return BadRequest("No certificate exists.");
 
-    public static Certificate? FromString(string str)
-    {
-        return JsonSerializer.Deserialize<Certificate>(str);
+        try
+        {
+            return Ok(new { certificate.Certificate });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = ex.Message });
+        }
     }
 }

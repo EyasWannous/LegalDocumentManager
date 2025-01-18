@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using LegalDocumentManager.Data;
+using LegalDocumentManager.Services;
 using Shared.Encryptions;
 
 namespace LegalDocumentManager.HostedServices;
@@ -10,18 +11,20 @@ public class KeyInitializationService : IHostedService
 {
     private readonly HttpClient _httpClient;
     private readonly IServiceProvider _serviceProvider;
+    private readonly KeyManagementService _keyService;
 
-    public KeyInitializationService(IHttpClientFactory httpClientFactory, IServiceProvider serviceProvider)
+    public KeyInitializationService(IHttpClientFactory httpClientFactory, IServiceProvider serviceProvider, KeyManagementService keyService)
     {
         _httpClient = httpClientFactory.CreateClient();
         _httpClient.BaseAddress = new Uri("https://localhost:7154/api/");
 
         _serviceProvider = serviceProvider;
+        _keyService = keyService;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        var myPublicKey = Constant.ASymmetricKeys.Values.First();
+        var myPublicKey = await _keyService.GetPublicKeyAsync();
 
         var publicKeyResponse = await _httpClient.GetAsync($"Key?publicKey={myPublicKey}", cancellationToken);
         if (!publicKeyResponse.IsSuccessStatusCode)
@@ -29,7 +32,7 @@ public class KeyInitializationService : IHostedService
 
         var publicKeyResult = await publicKeyResponse.Content.ReadAsStringAsync(cancellationToken);
 
-        string symmetricKey = Constant.AESKey;
+        string symmetricKey = KeyManagementService.AESKey;
         string encryptedSymmetricKey = AsymmetricEncryptionService.Encrypt(symmetricKey, publicKeyResult);
 
         var hashedKey = new {

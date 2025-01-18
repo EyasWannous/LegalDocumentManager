@@ -1,5 +1,6 @@
 using LegalDocumentManager.Data;
 using LegalDocumentManager.HostedServices;
+using LegalDocumentManager.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseInMemoryDatabase("TestDb")
-);
+);  
 
 builder.Services.Configure<IISServerOptions>(options =>
 {
@@ -51,23 +52,21 @@ builder.Services.AddControllers();
 
 builder.Services.AddHttpClient();
 builder.Services.AddHostedService<KeyInitializationService>();
-
+builder.Services.AddScoped<KeyManagementService>();
 
 var app = builder.Build();
 
-Constant.InitializeKeys();
+using (var scope = app.Services.CreateScope())
+{
+    var keyManagementService = scope.ServiceProvider.GetRequiredService<KeyManagementService>();
+    await keyManagementService.GenerateKeyPairAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
-}
-else
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
 }
 
 //using (var scope = app.Services.CreateScope())

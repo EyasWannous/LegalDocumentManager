@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using LegalDocumentManager.Services;
 
 namespace LegalDocumentManager.Controllers;
 
@@ -14,11 +15,13 @@ public class AccountController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly KeyManagementService _keyService;
 
-    public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+    public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, KeyManagementService keyService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _keyService = keyService;
     }
 
     //[HttpGet]
@@ -129,8 +132,9 @@ public class AccountController : ControllerBase
 
     [Authorize]
     [HttpGet("PublicKey")]
-    public Task<IActionResult> GetPublicKey()
+    public async Task<IActionResult> GetPublicKey()
     {
-        return Task.FromResult<IActionResult>(Ok(Constant.ASymmetricKeys.Values.First()));
+        var publicKey = await _keyService.GetPublicKeyAsync();
+        return Ok(publicKey);
     }
 }
