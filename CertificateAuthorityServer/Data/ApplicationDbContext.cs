@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using CertificateAuthorityServer.Controllers;
 using Microsoft.EntityFrameworkCore;
 
 namespace CertificateAuthorityServer.Data;

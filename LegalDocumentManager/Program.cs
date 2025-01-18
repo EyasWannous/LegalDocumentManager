@@ -13,7 +13,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseInMemoryDatabase("TestDb")
-);
+);  
 
 builder.Services.Configure<IISServerOptions>(options =>
 {
@@ -68,6 +68,7 @@ builder.Services.AddControllers();
 
 builder.Services.AddHttpClient();
 builder.Services.AddHostedService<KeyInitializationService>();
+builder.Services.AddScoped<KeyManagementService>();
 
 builder.Services.AddCors(options =>
 {
@@ -90,14 +91,8 @@ Constant.InitializeKeys();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
-}
-else
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
 }
 
 //using (var scope = app.Services.CreateScope())

@@ -90,8 +90,9 @@ public class AccountController : ControllerBase
 
     [Authorize]
     [HttpGet("PublicKey")]
-    public Task<IActionResult> GetPublicKey()
+    public async Task<IActionResult> GetPublicKey()
     {
-        return Task.FromResult<IActionResult>(Ok(Constant.ASymmetricKeys.Values.First()));
+        var publicKey = await _keyService.GetPublicKeyAsync();
+        return Ok(publicKey);
     }
 }

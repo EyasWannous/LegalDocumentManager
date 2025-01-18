@@ -1,4 +1,5 @@
 ﻿using LegalDocumentManager.Data;
+using LegalDocumentManager.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,11 +16,13 @@ public class AttachmentController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly KeyManagementService _keyService;
 
-    public AttachmentController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+    public AttachmentController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, KeyManagementService keyService)
     {
         _context = context;
         _userManager = userManager;
+        _keyService = keyService;
     }
 
     [HttpPost]
@@ -39,7 +42,7 @@ public class AttachmentController : ControllerBase
                 return BadRequest("");
             }
 
-            var encryptionService = new EncryptionAES(Constant.AESKey);
+            var encryptionService = new EncryptionAES(KeyManagementService.AESKey);
             var decryptedFileString = await encryptionService.DecryptAsync(encryptedFile);
             var decryptedFile = Convert.FromBase64String(decryptedFileString);
 
@@ -54,11 +57,14 @@ public class AttachmentController : ControllerBase
 
             await System.IO.File.WriteAllBytesAsync(filePath, decryptedFile);
 
+            var signature = await _keyService.SignDataAsync(decryptedFileString);
+
             var attachment = new Attachment
             {
                 FilePath = $"/uploads/{fileName}",
                 FileName = fileNameToStore,
-                UserId = user.Id
+                UserId = user.Id,
+                Signature = Convert.ToBase64String(signature)
             };
 
             _context.Attachments.Add(attachment);
@@ -71,7 +77,6 @@ public class AttachmentController : ControllerBase
             return BadRequest($"An error occurred: {ex.Message}");
         }
     }
-
 
     [HttpGet]
     public async Task<IActionResult> List(string searchNationalNumber)
@@ -104,6 +109,7 @@ public class AttachmentController : ControllerBase
         return Ok(userAttachments);
     }
 
+    [HttpGet]
     public async Task<IActionResult> Download(int id)
     {
         var attachment = await _context.Attachments.FindAsync(id);
@@ -117,6 +123,15 @@ public class AttachmentController : ControllerBase
         return File(fileBytes, "application/octet-stream", fileName);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetSignature(int id)
+    {
+        var attachment = await _context.Attachments.FindAsync(id);
+        if (attachment is null)
+            return NotFound();
+
+        return Ok(attachment.Signature);
+    }
 
     [HttpPost]
     public async Task<IActionResult> Delete(int id)
