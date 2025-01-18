@@ -51,22 +51,29 @@ public class KeyController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> ExchangeHashedSymmetricKey([FromBody] HashedSymmetricKey input)
     {
-        var serverCert = await _context.ServerCertificates.FirstOrDefaultAsync(x => x.Host == HttpContext.Request.Host.Value);
+        try
+        {
+            var serverCert = await _context.ServerCertificates.FirstOrDefaultAsync(x => x.Host == HttpContext.Request.Host.Value);
 
-        if (serverCert is null)
-            return BadRequest();
+            if (serverCert is null)
+                return BadRequest();
 
-        using RSA rsa = await _keyManagementService.GetPrivateKeyAsync();
+            using RSA rsa = await _keyManagementService.GetPrivateKeyAsync();
 
-        string privateKeyBase64 = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
+            string privateKeyBase64 = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
 
-        var symmetricKey = AsymmetricEncryptionService.Decrypt(input.HashedKey, privateKeyBase64);
+            var symmetricKey = AsymmetricEncryptionService.Decrypt(input.HashedKey, privateKeyBase64);
 
-        serverCert.Key = symmetricKey;
+            serverCert.Key = symmetricKey;
 
-        await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
-        return Ok();
+            return Ok();
+        }
+        catch(Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
     }
 }
 

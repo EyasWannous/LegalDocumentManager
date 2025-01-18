@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LegalDocumentManager", "Leg
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{568268C9-AF0E-4224-981F-490351C7151D}"
 EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "legaldocumentmanager.vueclient", "LegalDocumentManager.VueClient\legaldocumentmanager.vueclient.esproj", "{A4F68A8A-BE5A-41B3-9CDE-E9A5ADD6EE8E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,12 @@ Global
 		{568268C9-AF0E-4224-981F-490351C7151D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{568268C9-AF0E-4224-981F-490351C7151D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{568268C9-AF0E-4224-981F-490351C7151D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4F68A8A-BE5A-41B3-9CDE-E9A5ADD6EE8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4F68A8A-BE5A-41B3-9CDE-E9A5ADD6EE8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4F68A8A-BE5A-41B3-9CDE-E9A5ADD6EE8E}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{A4F68A8A-BE5A-41B3-9CDE-E9A5ADD6EE8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4F68A8A-BE5A-41B3-9CDE-E9A5ADD6EE8E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4F68A8A-BE5A-41B3-9CDE-E9A5ADD6EE8E}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

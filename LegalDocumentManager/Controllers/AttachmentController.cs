@@ -24,9 +24,10 @@ public class AttachmentController : ControllerBase
         _userManager = userManager;
         _keyService = keyService;
     }
-
-    [HttpPost]
-    public async Task<IActionResult> Upload([FromBody] string encryptedFile, [FromBody] string fileName)
+    
+    //TODO
+    [HttpPost("Upload")]
+    public async Task<IActionResult> Upload([FromRoute] string encryptedFile, [FromRoute] string fileName)
     {
         try
         {
@@ -78,8 +79,8 @@ public class AttachmentController : ControllerBase
         }
     }
 
-    [HttpGet]
-    public async Task<IActionResult> List(string searchNationalNumber)
+    [HttpGet("List")]
+    public async Task<IActionResult> List([FromQuery] string searchNationalNumber)
     {
         var user = await _userManager.GetUserAsync(User);
 
@@ -109,8 +110,8 @@ public class AttachmentController : ControllerBase
         return Ok(userAttachments);
     }
 
-    [HttpGet]
-    public async Task<IActionResult> Download(int id)
+    [HttpGet("Download")]
+    public async Task<IActionResult> Download([FromRoute] int id)
     {
         var attachment = await _context.Attachments.FindAsync(id);
         if (attachment is null)
@@ -123,8 +124,8 @@ public class AttachmentController : ControllerBase
         return File(fileBytes, "application/octet-stream", fileName);
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetSignature(int id)
+    [HttpGet("GetSignature")]
+    public async Task<IActionResult> GetSignature([FromRoute] int id)
     {
         var attachment = await _context.Attachments.FindAsync(id);
         if (attachment is null)
@@ -133,8 +134,8 @@ public class AttachmentController : ControllerBase
         return Ok(attachment.Signature);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Delete(int id)
+    [HttpPost("Delete")]
+    public async Task<IActionResult> Delete([FromRoute] int id)
     {
         var attachment = await _context.Attachments.FindAsync(id);
         if (attachment is null)

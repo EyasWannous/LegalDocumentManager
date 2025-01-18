@@ -4,25 +4,29 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using LegalDocumentManager.Services;
+using Shared.Encryptions;
 
 namespace LegalDocumentManager.Controllers;
 
 [ApiController]
-[Route("[Controller]")]
+[Route("api/[Controller]")]
 public class AccountController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly TokenService _tokenService;
+    private readonly KeyManagementService _keyService;
 
     public AccountController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
-        TokenService tokenService)
+        TokenService tokenService,
+        KeyManagementService keyService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _tokenService = tokenService;
+        _keyService = keyService;
     }
 
     [HttpPost("Login")]
@@ -73,9 +77,12 @@ public class AccountController : ControllerBase
             return BadRequest(result.Errors.Select(x => x.Description).ToList());
 
         //await _signInManager.SignInAsync(user, isPersistent: false);
+        string symmetricKey = KeyManagementService.AESKey;
+
+        var hashedKey = AsymmetricEncryptionService.EncryptWithInfo(symmetricKey, model.PublicKey);
 
         var token = _tokenService.GenerateToken(user);
-        return Ok(new { token });
+        return Ok(new { Token = token, HashedKey = hashedKey });
     }
 
     [Authorize]

@@ -1,12 +1,17 @@
 using System.Text;
 using LegalDocumentManager.Data;
 using LegalDocumentManager.HostedServices;
+using LegalDocumentManager.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+// Add services to the container.
+builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -63,21 +68,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Add services to the container.
-builder.Services.AddControllers();
-
 builder.Services.AddHttpClient();
 builder.Services.AddHostedService<KeyInitializationService>();
 builder.Services.AddScoped<KeyManagementService>();
+builder.Services.AddScoped<TokenService>();
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin",
         policy =>
         {
-            policy.WithOrigins("https://localhost:7011") // ;http://localhost:5257
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+            policy.AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowAnyOrigin();
         });
 });
 
@@ -85,8 +88,6 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseCors("AllowSpecificOrigin");
-
-Constant.InitializeKeys();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -107,5 +108,7 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthorization();
+
+app.MapControllers();
 
 app.Run();
