@@ -111,11 +111,7 @@ public class KeyManagementService
 
             var hashedKey = await response.Content.ReadAsStringAsync();
 
-            var rsa = (await GetPrivateKeyAsync());
-
-            var privateKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
-
-            SymmetricKey = Decrypt(hashedKey, privateKey);
+            SymmetricKey = Decrypt(hashedKey, await GetPrivateKeyAsync());
         }
         catch (Exception ex)
         {
@@ -168,25 +164,30 @@ public class KeyManagementService
         );
     }
 
-    private static string Decrypt(string cipherText, string privateKey)
+    private string Decrypt(string cipherText, RSA privateKeyRSA)
     {
-        using var rsa = RSA.Create();
-        rsa.ImportRSAPrivateKey(Convert.FromBase64String(privateKey), out _);
-
-        byte[] decryptedData = rsa.Decrypt(Convert.FromBase64String(cipherText), RSAEncryptionPadding.OaepSHA256);
+        byte[] decryptedData = privateKeyRSA.Decrypt(Convert.FromBase64String(cipherText), RSAEncryptionPadding.OaepSHA256);
         return Encoding.UTF8.GetString(decryptedData);
     }
 
     private RSA ConvertBase64PublicKeyToRsa(string base64PublicKey)
     {
-        // Decode the Base64-encoded string to get the DER bytes
         byte[] publicKeyBytes = Convert.FromBase64String(base64PublicKey);
 
-        // Create an RSA instance
         RSA rsa = RSA.Create();
 
-        // Import the public key in DER format
         rsa.ImportRSAPublicKey(publicKeyBytes, out _);
+
+        return rsa;
+    }
+
+    private RSA ConvertBase64PrivateKeyToRsa(string base64PrivateKey)
+    {
+        byte[] privateKeyBytes = Convert.FromBase64String(base64PrivateKey);
+
+        RSA rsa = RSA.Create();
+
+        rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
 
         return rsa;
     }
