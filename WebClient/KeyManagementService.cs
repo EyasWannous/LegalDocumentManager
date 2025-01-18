@@ -1,16 +1,19 @@
-﻿using System.Security.Cryptography;
+﻿using System.Net.Http;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using Shared.Encryptions;
 
-namespace LegalDocumentManager.Services;
+namespace WebClient;
+
 
 public class KeyManagementService
 {
     private const string PrivateKeyPath = "Keys/private_key.pem";
     private const string PublicKeyPath = "Keys/public_key.pem";
     private const string Passphrase = "YourSecurePassphraseHere";
-    public static string AESKey = AESKeyGenerator.GenerateKeyBase64(128);
-    public static string ClientPublicKeyString64;
+    private const string ServerKeysURL = "https://localhost:7011/api/keys";
+    public static RSA ServerPublicKey = null;
+    public static string SymmetricKey = null;
 
     public KeyManagementService()
     {
@@ -67,6 +70,61 @@ public class KeyManagementService
         );
     }
 
+    public async Task GetServerPublicKeyAsync()
+    {
+        try
+        {
+            var rsa = (await GetPublicKeyAsync());
+
+            var publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
+
+            var requestUrl = $"{ServerKeysURL}/public?publickey={Uri.EscapeDataString(publicKey)}";
+
+            var _httpClient = new HttpClient();
+
+            HttpResponseMessage response = await _httpClient.GetAsync(requestUrl);
+
+            response.EnsureSuccessStatusCode();
+
+            string publicKeyString = await response.Content.ReadAsStringAsync();
+
+            ServerPublicKey = ConvertBase64PublicKeyToRsa(publicKeyString);
+        }
+        catch (Exception ex)
+        {
+            // Handle or log the exception as needed
+            throw new ApplicationException("Failed to fetch the public key.", ex);
+        }
+    }
+
+    public async Task FetchSymmetricKeyAsync()
+    {
+        try
+        {
+            var requestUri = $"{ServerKeysURL}/symmetric";
+
+            var _httpClient = new HttpClient();
+
+            var response = await _httpClient.GetAsync(requestUri);
+
+            response.EnsureSuccessStatusCode();
+
+            var hashedKey = await response.Content.ReadAsStringAsync();
+
+            var rsa = (await GetPrivateKeyAsync());
+
+            var privateKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
+
+            SymmetricKey = Decrypt(hashedKey, privateKey);
+        }
+        catch (Exception ex)
+        {
+            // Handle or log the exception as needed
+            throw new ApplicationException("Failed to fetch the public key.", ex);
+        }
+    }
+
+
     private async Task<byte[]> EncryptPrivateKeyAsync(byte[] privateKey)
     {
         using Aes aes = Aes.Create();
@@ -110,6 +168,15 @@ public class KeyManagementService
         );
     }
 
+    private static string Decrypt(string cipherText, string privateKey)
+    {
+        using var rsa = RSA.Create();
+        rsa.ImportRSAPrivateKey(Convert.FromBase64String(privateKey), out _);
+
+        byte[] decryptedData = rsa.Decrypt(Convert.FromBase64String(cipherText), RSAEncryptionPadding.OaepSHA256);
+        return Encoding.UTF8.GetString(decryptedData);
+    }
+
     private RSA ConvertBase64PublicKeyToRsa(string base64PublicKey)
     {
         // Decode the Base64-encoded string to get the DER bytes
@@ -119,8 +186,9 @@ public class KeyManagementService
         RSA rsa = RSA.Create();
 
         // Import the public key in DER format
-        rsa.ImportSubjectPublicKeyInfo(publicKeyBytes, out _);
+        rsa.ImportRSAPublicKey(publicKeyBytes, out _);
 
         return rsa;
     }
 }
+

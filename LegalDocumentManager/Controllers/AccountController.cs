@@ -1,9 +1,9 @@
 ﻿using LegalDocumentManager.Data;
 using LegalDocumentManager.Models;
+using LegalDocumentManager.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using LegalDocumentManager.Services;
 using Shared.Encryptions;
 
 namespace LegalDocumentManager.Controllers;
@@ -93,13 +93,5 @@ public class AccountController : ControllerBase
         //await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
         return RedirectToAction("Index", "Home");
-    }
-
-    [Authorize]
-    [HttpGet("PublicKey")]
-    public async Task<IActionResult> GetPublicKey()
-    {
-        var publicKey = await _keyService.GetPublicKeyAsync();
-        return Ok(publicKey);
     }
 }
