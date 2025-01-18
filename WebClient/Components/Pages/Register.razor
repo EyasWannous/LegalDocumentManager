@@ -1,0 +1,77 @@
+﻿@page "/register"
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using WebClient.Models
+
+@inject ApiService ApiService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<h3>Register</h3>
+
+<EditForm Model="@registerModel" OnValidSubmit="HandleRegister" FormName="RegisterForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label>Full Name</label>
+        <InputText @bind-Value="registerModel.FullName" />
+    </div>
+    <div>
+        <label>National Number</label>
+        <InputText @bind-Value="registerModel.NationalNumber" />
+    </div>
+    <div>
+        <label>Phone Number</label>
+        <InputText @bind-Value="registerModel.PhoneNumber" />
+    </div>
+    <div>
+        <label>Birthday</label>
+        <InputDate @bind-Value="registerModel.Birthday" />
+    </div>
+    <div>
+        <label>Password</label>
+        <InputText type="password" @bind-Value="registerModel.Password" />
+    </div>
+    <div>
+        <label>Confirm Password</label>
+        <InputText type="password" @bind-Value="registerModel.ConfirmPassword" />
+    </div>
+    <div>
+        <label>Is Government Account</label>
+        <InputCheckbox @bind-Value="registerModel.IsGovernmentAccount" />
+    </div>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger">@ErrorMessage</div>
+    }
+
+    <button type="submit">Register</button>
+</EditForm>
+
+@code {
+    private RegisterViewModel registerModel = new RegisterViewModel();
+    private string ErrorMessage = string.Empty;
+
+    private async Task HandleRegister()
+    {
+        ErrorMessage = string.Empty; // Clear previous errors
+
+        try
+        {
+            var token = await ApiService.RegisterAsync(registerModel);
+            var userSession = new UserSession { UserName = registerModel.NationalNumber, Email = registerModel.NationalNumber, Token = token };
+            await ((CustomAuthenticationStateProvider)AuthenticationStateProvider).MarkUserAsAuthenticated(userSession);
+            Navigation.NavigateTo("/");
+        }
+        catch (HttpRequestException ex)
+        {
+            ErrorMessage = $"Registration failed: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+}

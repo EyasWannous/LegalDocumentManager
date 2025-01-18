@@ -1,0 +1,28 @@
+﻿/* Custom styles for the sidebar and main content */
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #343a40; /* Dark background for sidebar */
+    color: white;
+    overflow-y: auto;
+}
+
+.main {
+    margin-left: 250px; /* Match sidebar width */
+    padding-top: 56px; /* Adjust for top row height */
+}
+
+.top-row {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    background-color: #f8f9fa; /* Light background for top row */
+    border-bottom: 1px solid #dee2e6;
+}
+
+.content {
+    padding: 20px;
+}

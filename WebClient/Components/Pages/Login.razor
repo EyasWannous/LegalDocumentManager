@@ -1,0 +1,41 @@
+﻿@page "/login"
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using WebClient.Models
+
+@inject ApiService ApiService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<h3>Login</h3>
+
+<EditForm Model="@loginModel" OnValidSubmit="HandleLogin" FormName="LoginForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label>National Number</label>
+        <InputText @bind-Value="loginModel.NationalNumber" />
+    </div>
+    <div>
+        <label>Password</label>
+        <InputText type="password" @bind-Value="loginModel.Password" />
+    </div>
+    <div>
+        <label>Remember Me</label>
+        <InputCheckbox @bind-Value="loginModel.RememberMe" />
+    </div>
+    <button type="submit">Login</button>
+</EditForm>
+
+@code {
+    private LoginViewModel loginModel = new LoginViewModel();
+
+    private async Task HandleLogin()
+    {
+        var token = await ApiService.LoginAsync(loginModel);
+        var userSession = new UserSession { UserName = loginModel.NationalNumber, Email = loginModel.NationalNumber, Token = token };
+        await ((CustomAuthenticationStateProvider)AuthenticationStateProvider).MarkUserAsAuthenticated(userSession);
+        Navigation.NavigateTo("/");
+    }
+}
