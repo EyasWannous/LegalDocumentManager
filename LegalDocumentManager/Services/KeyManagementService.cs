@@ -123,4 +123,55 @@ public class KeyManagementService
 
         return rsa;
     }
+
+    public async Task<string> EncryptSymmetricAsync(string plainText)
+    {
+        using var aesAlg = Aes.Create();
+        aesAlg.Key = Convert.FromBase64String(AESKey);
+        aesAlg.Mode = CipherMode.CBC;
+        aesAlg.Padding = PaddingMode.PKCS7;
+
+        aesAlg.GenerateIV();
+        byte[] iv = aesAlg.IV;
+
+        using var msEncrypt = new MemoryStream();
+        await msEncrypt.WriteAsync(iv, 0, iv.Length); // Store IV first
+
+        using (var csEncrypt = new CryptoStream(msEncrypt, aesAlg.CreateEncryptor(aesAlg.Key, iv), CryptoStreamMode.Write))
+
+        using (var swEncrypt = new StreamWriter(csEncrypt))
+        {
+            await swEncrypt.WriteAsync(plainText);
+            swEncrypt.Flush(); // Ensure everything is written
+        }
+
+        byte[] encryptedBytes = msEncrypt.ToArray();
+        //Console.WriteLine($"Encrypted Bytes Length: {encryptedBytes.Length}");
+        return Convert.ToBase64String(encryptedBytes);
+    }
+
+    public async Task<string> DecryptSymmetricAsync(string cipherText)
+    {
+        byte[] fullCipher = Convert.FromBase64String(cipherText);
+
+        using var aesAlg = Aes.Create();
+        aesAlg.Key = Convert.FromBase64String(AESKey);
+        aesAlg.Mode = CipherMode.CBC;
+        aesAlg.Padding = PaddingMode.PKCS7;
+
+        byte[] iv = new byte[aesAlg.BlockSize / 8];
+        Array.Copy(fullCipher, iv, iv.Length);
+
+        //Console.WriteLine($"Decryption IV: {BitConverter.ToString(iv)}");
+
+        using var decryptor = aesAlg.CreateDecryptor(aesAlg.Key, iv);
+        using var msDecrypt = new MemoryStream(fullCipher, iv.Length, fullCipher.Length - iv.Length);
+        using var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
+        using var srDecrypt = new StreamReader(csDecrypt);
+
+        var decryptedText = await srDecrypt.ReadToEndAsync();
+
+        //Console.WriteLine($"Decrypted Text: {decryptedText}");
+        return decryptedText;
+    }
 }

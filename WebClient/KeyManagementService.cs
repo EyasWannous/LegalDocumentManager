@@ -193,10 +193,10 @@ public class KeyManagementService
         return rsa;
     }
 
-    public async Task<string> EncryptAsync(string plainText)
+    public static async Task<string> EncryptSymmetricAsync(string plainText)
     {
         using var aesAlg = Aes.Create();
-        aesAlg.Key = Convert.FromBase64String(SymmetricKey);
+        aesAlg.Key = Convert.FromBase64String(AESKey);
         aesAlg.Mode = CipherMode.CBC;
         aesAlg.Padding = PaddingMode.PKCS7;
 
@@ -217,6 +217,31 @@ public class KeyManagementService
         byte[] encryptedBytes = msEncrypt.ToArray();
         //Console.WriteLine($"Encrypted Bytes Length: {encryptedBytes.Length}");
         return Convert.ToBase64String(encryptedBytes);
+    }
+
+    public static async Task<string> DecryptSymmetricAsync(string cipherText)
+    {
+        byte[] fullCipher = Convert.FromBase64String(cipherText);
+
+        using var aesAlg = Aes.Create();
+        aesAlg.Key = Convert.FromBase64String(AESKey);
+        aesAlg.Mode = CipherMode.CBC;
+        aesAlg.Padding = PaddingMode.PKCS7;
+
+        byte[] iv = new byte[aesAlg.BlockSize / 8];
+        Array.Copy(fullCipher, iv, iv.Length);
+
+        //Console.WriteLine($"Decryption IV: {BitConverter.ToString(iv)}");
+
+        using var decryptor = aesAlg.CreateDecryptor(aesAlg.Key, iv);
+        using var msDecrypt = new MemoryStream(fullCipher, iv.Length, fullCipher.Length - iv.Length);
+        using var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
+        using var srDecrypt = new StreamReader(csDecrypt);
+
+        var decryptedText = await srDecrypt.ReadToEndAsync();
+
+        //Console.WriteLine($"Decrypted Text: {decryptedText}");
+        return decryptedText;
     }
 }
 

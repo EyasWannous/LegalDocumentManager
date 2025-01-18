@@ -27,10 +27,6 @@ using (var scope = app.Services.CreateScope())
     await keyManagementService.FetchSymmetricKeyAsync();
 }
 
-app.UseMiddleware<EncryptionMiddleware>(
-    "https://localhost:7011", // Target host
-    Convert.FromBase64String(KeyManagementService.SymmetricKey));
-
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);

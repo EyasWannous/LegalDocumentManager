@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using LegalDocumentManager.Data;
 using LegalDocumentManager.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -102,6 +103,8 @@ public class AttachmentController : ControllerBase
                 attachmentsQuery = attachmentsQuery.Where(a => a.User.Email!.Contains(searchNationalNumber));
             }
             var attachments = await attachmentsQuery.ToListAsync();
+
+            var encAttachments = _keyService.EncryptSymmetricAsync(JsonSerializer.Serialize(attachments));
 
             return Ok(attachments);
         }
