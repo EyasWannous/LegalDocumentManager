@@ -484,3 +484,10 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
+Keys/*
+/CertificateAuthorityServer/Keys/private_key.pem
+/CertificateAuthorityServer/Keys/public_key.pem
+/LegalDocumentManager/Keys/private_key.pem
+/LegalDocumentManager/Keys/public_key.pem
+/WebClient/Keys/private_key.pem
+/WebClient/Keys/public_key.pem
