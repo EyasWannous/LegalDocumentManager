@@ -4,7 +4,6 @@ using LegalDocumentManager.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Encryptions;
 
 namespace LegalDocumentManager.Controllers;
 
@@ -15,18 +14,15 @@ public class AccountController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly TokenService _tokenService;
-    private readonly KeyManagementService _keyService;
 
     public AccountController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
-        TokenService tokenService,
-        KeyManagementService keyService)
+        TokenService tokenService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _tokenService = tokenService;
-        _keyService = keyService;
     }
 
     [HttpPost("Login")]
@@ -39,12 +35,6 @@ public class AccountController : ControllerBase
         var result = await _signInManager.PasswordSignInAsync(user.UserName!, model.Password, model.RememberMe, false);
         if (!result.Succeeded)
             return BadRequest("National Number or password are incorrect");
-
-        if (!string.IsNullOrEmpty(model.PublicKey))
-        {
-            user.ClientPublicKey = model.PublicKey;
-            await _userManager.UpdateAsync(user);
-        }
 
         var token = _tokenService.GenerateToken(user);
         return Ok(new { token });
@@ -69,20 +59,14 @@ public class AccountController : ControllerBase
                 FullName = model.FullName,
             };
 
-        if (!string.IsNullOrEmpty(model.PublicKey))
-            user.ClientPublicKey = model.PublicKey;
-
+        
         var result = await _userManager.CreateAsync(user, model.Password);
         if (!result.Succeeded)
             return BadRequest(result.Errors.Select(x => x.Description).ToList());
 
-        //await _signInManager.SignInAsync(user, isPersistent: false);
-        string symmetricKey = KeyManagementService.AESKey;
-
-        var hashedKey = AsymmetricEncryptionService.EncryptWithInfo(symmetricKey, model.PublicKey);
-
+        
         var token = _tokenService.GenerateToken(user);
-        return Ok(new { Token = token, HashedKey = hashedKey });
+        return Ok(new { token });
     }
 
     [Authorize]
@@ -92,6 +76,6 @@ public class AccountController : ControllerBase
         await _signInManager.SignOutAsync();
         //await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-        return RedirectToAction("Index", "Home");
+        return NoContent();
     }
 }

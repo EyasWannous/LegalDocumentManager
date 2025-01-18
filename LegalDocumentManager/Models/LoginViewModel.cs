@@ -13,7 +13,4 @@ public class LoginViewModel
     public required string Password { get; set; }
 
     public bool RememberMe { get; set; }
-
-    [Required]
-    public required string PublicKey { get; set; }
 }
