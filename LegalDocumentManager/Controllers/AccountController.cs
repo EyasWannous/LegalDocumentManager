@@ -1,10 +1,9 @@
 ﻿using LegalDocumentManager.Data;
 using LegalDocumentManager.Models;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using LegalDocumentManager.Services;
 
 namespace LegalDocumentManager.Controllers;
 
@@ -14,29 +13,17 @@ public class AccountController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly TokenService _tokenService;
 
-    public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+    public AccountController(
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
+        TokenService tokenService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _tokenService = tokenService;
     }
-
-    //[HttpGet]
-    //public IActionResult Login()
-    //{
-    //    // Generate RSA Key Pair
-    //    var (publicKey, privateKey) = RSAKeyGenerator.GenerateKeys();
-
-    //    // Pass the Public Key to the View
-    //    ViewData["PublicKey"] = publicKey;
-
-    //    TempData["Key"] = AsymmetricEncryptionService.Encrypt(Constant.AESKey, publicKey);
-
-    //    // The Private Key should not be stored server-side. It will be stored in the client's localStorage.
-    //    TempData["PrivateKey"] = privateKey; // Optional for debugging; avoid in production.
-
-    //    return View();
-    //}
 
     [HttpPost("Login")]
     public async Task<IActionResult> Login([FromBody] LoginViewModel model)
@@ -55,31 +42,9 @@ public class AccountController : ControllerBase
             await _userManager.UpdateAsync(user);
         }
 
-        await HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme,
-            await _signInManager.CreateUserPrincipalAsync(user)
-        );
-
-        return RedirectToAction("Index", "Home");
+        var token = _tokenService.GenerateToken(user);
+        return Ok(new { token });
     }
-
-
-    //[HttpGet]
-    //public IActionResult Register()
-    //{
-    //    // Generate RSA Key Pair
-    //    var (publicKey, privateKey) = RSAKeyGenerator.GenerateKeys();
-
-    //    // Pass the Public Key to the View
-    //    ViewData["PublicKey"] = publicKey;
-
-    //    TempData["Key"] = AsymmetricEncryptionService.Encrypt(Constant.AESKey, publicKey);
-
-    //    // The Private Key should not be stored server-side. It will be stored in the client's localStorage.
-    //    TempData["PrivateKey"] = privateKey; // Optional for debugging; avoid in production.
-
-    //    return View();
-    //}
 
     [HttpPost("Register")]
     public async Task<IActionResult> Register([FromBody] RegisterViewModel model)
@@ -107,22 +72,18 @@ public class AccountController : ControllerBase
         if (!result.Succeeded)
             return BadRequest(result.Errors.Select(x => x.Description).ToList());
 
-        await _signInManager.SignInAsync(user, isPersistent: false);
+        //await _signInManager.SignInAsync(user, isPersistent: false);
 
-        await HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme,
-            await _signInManager.CreateUserPrincipalAsync(user)
-        );
-
-        return RedirectToAction("Index", "Home");
+        var token = _tokenService.GenerateToken(user);
+        return Ok(new { token });
     }
 
-
+    [Authorize]
     [HttpGet("Logout")]
     public async Task<IActionResult> Logout()
     {
         await _signInManager.SignOutAsync();
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        //await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
         return RedirectToAction("Index", "Home");
     }
