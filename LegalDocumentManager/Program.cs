@@ -1,9 +1,12 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using LegalDocumentManager.Data;
 using LegalDocumentManager.HostedServices;
+using LegalDocumentManager.Middelwares;
 using LegalDocumentManager.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -52,6 +55,16 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 //    options.SlidingExpiration = true;
 //    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
 //});
+builder.Services.AddRateLimiter(rateLimiterOptions =>
+{
+    rateLimiterOptions.AddFixedWindowLimiter("FixedWindowPolicy", options =>
+    {
+        options.PermitLimit = 10; // Max requests
+        options.Window = TimeSpan.FromMinutes(1); // Time window
+        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        options.QueueLimit = 2; // Max queued requests
+    });
+});
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -87,6 +100,10 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+await ScanService.ScanFileWithWindowsDefenderAsync(
+    @"C:\Users\eyasw\source\repos\EyasWannous\LegalDocumentManager\LegalDocumentManager\wwwroot\uploads\imagee7368442-b79d-4126-bbde-9cbd1361dd2b.jpg"
+);
+
 app.UseCors("AllowSpecificOrigin");
 
 // Configure the HTTP request pipeline.
@@ -101,6 +118,7 @@ if (app.Environment.IsDevelopment())
 //    var services = scope.ServiceProvider;
 //    await ApplicationDbInitializer.SeedUsersAndRolesAsync(services);
 //}
+app.UseRateLimiter();
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -110,5 +128,7 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseMiddleware<InputSanitizationMiddleware>();
 
 app.Run();
