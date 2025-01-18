@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 
 namespace WebClient;
 
@@ -190,6 +191,32 @@ public class KeyManagementService
         rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
 
         return rsa;
+    }
+
+    public async Task<string> EncryptAsync(string plainText)
+    {
+        using var aesAlg = Aes.Create();
+        aesAlg.Key = Convert.FromBase64String(SymmetricKey);
+        aesAlg.Mode = CipherMode.CBC;
+        aesAlg.Padding = PaddingMode.PKCS7;
+
+        aesAlg.GenerateIV();
+        byte[] iv = aesAlg.IV;
+
+        using var msEncrypt = new MemoryStream();
+        await msEncrypt.WriteAsync(iv, 0, iv.Length); // Store IV first
+
+        using (var csEncrypt = new CryptoStream(msEncrypt, aesAlg.CreateEncryptor(aesAlg.Key, iv), CryptoStreamMode.Write))
+
+        using (var swEncrypt = new StreamWriter(csEncrypt))
+        {
+            await swEncrypt.WriteAsync(plainText);
+            swEncrypt.Flush(); // Ensure everything is written
+        }
+
+        byte[] encryptedBytes = msEncrypt.ToArray();
+        //Console.WriteLine($"Encrypted Bytes Length: {encryptedBytes.Length}");
+        return Convert.ToBase64String(encryptedBytes);
     }
 }
 

@@ -1,4 +1,5 @@
-﻿using LegalDocumentManager.Data;
+﻿using System.ComponentModel.DataAnnotations;
+using LegalDocumentManager.Data;
 using LegalDocumentManager.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -24,10 +25,10 @@ public class AttachmentController : ControllerBase
         _userManager = userManager;
         _keyService = keyService;
     }
-    
+
     //TODO
     [HttpPost("Upload")]
-    public async Task<IActionResult> Upload([FromRoute] string encryptedFile, [FromRoute] string fileName)
+    public async Task<IActionResult> Upload([FromBody] UploadViewModel input)
     {
         try
         {
@@ -38,13 +39,13 @@ public class AttachmentController : ControllerBase
                 return BadRequest("");
             }
 
-            if (string.IsNullOrWhiteSpace(encryptedFile) || string.IsNullOrWhiteSpace(fileName))
+            if (string.IsNullOrWhiteSpace(input.EncryptedFile) || string.IsNullOrWhiteSpace(input.FileName))
             {
                 return BadRequest("");
             }
 
             var encryptionService = new EncryptionAES(KeyManagementService.AESKey);
-            var decryptedFileString = await encryptionService.DecryptAsync(encryptedFile);
+            var decryptedFileString = await encryptionService.DecryptAsync(input.EncryptedFile);
             var decryptedFile = Convert.FromBase64String(decryptedFileString);
 
             var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
@@ -53,7 +54,7 @@ public class AttachmentController : ControllerBase
                 Directory.CreateDirectory(uploadsPath);
             }
 
-            var fileNameToStore = Path.GetFileNameWithoutExtension(fileName) + Guid.NewGuid().ToString() + Path.GetExtension(fileName);
+            var fileNameToStore = Path.GetFileNameWithoutExtension(input.FileName) + Guid.NewGuid().ToString() + Path.GetExtension(input.FileName);
             var filePath = Path.Combine(uploadsPath, fileNameToStore);
 
             await System.IO.File.WriteAllBytesAsync(filePath, decryptedFile);
@@ -62,7 +63,7 @@ public class AttachmentController : ControllerBase
 
             var attachment = new Attachment
             {
-                FilePath = $"/uploads/{fileName}",
+                FilePath = $"/uploads/{input.FileName}",
                 FileName = fileNameToStore,
                 UserId = user.Id,
                 Signature = Convert.ToBase64String(signature)
@@ -143,10 +144,19 @@ public class AttachmentController : ControllerBase
 
         var filePath = Path.Combine(Directory.GetCurrentDirectory(), $"wwwroot/{attachment.FilePath}");
         System.IO.File.Delete(filePath);
-        
+
         _context.Attachments.Remove(attachment);
         await _context.SaveChangesAsync();
 
         return NoContent();
     }
+}
+
+public class UploadViewModel
+{
+    [Required]
+    public string EncryptedFile { get; set; }
+    
+    [Required]
+    public string FileName { get; set; }
 }

@@ -1,13 +1,18 @@
-﻿@using WebClient.Models
+﻿@page "/documents"
+
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using WebClient.Models
+
 @inject HttpClient Http
-@page "/documents"
+@inject ProtectedSessionStorage ProtectedSessionStorage
+@inject NavigationManager NavigationManager
+
 <h3>DocumentIndex</h3>
 
 <div>
     <input @bind="searchNationalNumber" @bind:event="oninput" placeholder="Search by National Number" class="form-control" />
     <button @onclick="LoadAttachments" class="btn btn-primary mt-2">Search</button>
 </div>
-
 
 @if (isLoading)
 {
@@ -49,18 +54,56 @@ else
     private string searchNationalNumber = string.Empty;
     private bool isLoading = false;
     private string errorMessage = string.Empty;
+    private string? userToken;
 
-    protected override async Task OnInitializedAsync()
+    private bool hasInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await LoadAttachments();
+        if (firstRender)
+        {
+            try
+            {
+                var userSessionResult = await ProtectedSessionStorage.GetAsync<UserSession>("UserSession");
+                var userSession = userSessionResult.Success ? userSessionResult.Value : null;
+
+                if (userSession?.Token == null)
+                {
+                    errorMessage = "You are not authorized. Please log in.";
+                    NavigationManager.NavigateTo("/login");
+                }
+                else
+                {
+                    userToken = userSession.Token;
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Failed to retrieve user session: {ex.Message}";
+            }
+            finally
+            {
+                hasInitialized = true;
+                StateHasChanged(); // Re-render the component after initialization
+            }
+        }
     }
 
     private async Task LoadAttachments()
     {
+        if (string.IsNullOrEmpty(userToken))
+        {
+            errorMessage = "You are not authorized. Please log in.";
+            return;
+        }
+
         isLoading = true;
         errorMessage = string.Empty;
+
         try
         {
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", userToken);
+
             var query = string.IsNullOrWhiteSpace(searchNationalNumber)
                 ? string.Empty
                 : $"?searchNationalNumber={searchNationalNumber}";
