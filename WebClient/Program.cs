@@ -25,8 +25,11 @@ using (var scope = app.Services.CreateScope())
     await keyManagementService.GenerateKeyPairAsync();
     await keyManagementService.GetServerPublicKeyAsync();
     await keyManagementService.FetchSymmetricKeyAsync();
-    Console.WriteLine($"PublicKey: {KeyManagementService.SymmetricKey}");
 }
+
+app.UseMiddleware<EncryptionMiddleware>(
+    "https://localhost:7011", // Target host
+    Convert.FromBase64String(KeyManagementService.SymmetricKey));
 
 if (!app.Environment.IsDevelopment())
 {

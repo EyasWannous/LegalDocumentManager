@@ -1,5 +1,6 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using LegalDocumentManager;
 using LegalDocumentManager.Data;
 using LegalDocumentManager.HostedServices;
 using LegalDocumentManager.Middelwares;
@@ -130,5 +131,9 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.UseMiddleware<InputSanitizationMiddleware>();
+
+app.UseMiddleware<EncryptionMiddleware>(
+    "https://localhost:7060", // Target host
+    Convert.FromBase64String(KeyManagementService.AESKey));
 
 app.Run();
