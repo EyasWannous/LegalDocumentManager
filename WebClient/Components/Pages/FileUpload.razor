@@ -7,7 +7,7 @@
 @using System.Text.Json
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 
-@inject IHttpClientFactory HttpClientFactory
+@inject HttpClient Http
 @inject NavigationManager NavigationManager
 @inject KeyManagementService KeyService
 @inject ProtectedSessionStorage ProtectedSessionStorage
@@ -36,7 +36,6 @@
     private bool IsLoading = false;
     private string Message = string.Empty;
     private string MessageClass = string.Empty;
-    private HttpClient Http => HttpClientFactory.CreateClient("MyHttpClient");
     private string? userToken;
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
@@ -91,10 +90,6 @@
                     EncryptedFile = Convert.ToBase64String(encryptedFile),
                     FileName = FileName
                 };
-
-            // Log the JSON request body
-            var jsonRequestBody = JsonSerializer.Serialize(uploadModel);
-            Console.WriteLine($"Request Body: {jsonRequestBody}"); // Or log to a file or UI
 
             // Send the data as JSON
             var response = await Http.PostAsJsonAsync("https://localhost:7011/api/Attachment/Upload", uploadModel);

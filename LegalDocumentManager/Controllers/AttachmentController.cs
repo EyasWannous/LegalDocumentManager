@@ -2,6 +2,7 @@
 using System.Text.Json;
 using LegalDocumentManager.Data;
 using LegalDocumentManager.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,7 @@ using Attachment = LegalDocumentManager.Data.Attachment;
 
 namespace LegalDocumentManager.Controllers;
 
-[Authorize]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ApiController]
 [Route("api/[controller]")]
 public class AttachmentController : ControllerBase
@@ -27,7 +28,6 @@ public class AttachmentController : ControllerBase
         _keyService = keyService;
     }
 
-    //TODO
     [HttpPost("Upload")]
     public async Task<IActionResult> Upload([FromBody] UploadViewModel input)
     {
@@ -46,7 +46,7 @@ public class AttachmentController : ControllerBase
             }
 
             var encryptionService = new EncryptionAES(KeyManagementService.AESKey);
-            var decryptedFileString = await encryptionService.DecryptAsync(input.EncryptedFile);
+            var decryptedFileString = await encryptionService.DecryptWithCatchAsync(input.EncryptedFile);
             var decryptedFile = Convert.FromBase64String(decryptedFileString);
 
             var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
@@ -82,7 +82,7 @@ public class AttachmentController : ControllerBase
     }
 
     [HttpGet("List")]
-    public async Task<IActionResult> List([FromQuery] string searchNationalNumber)
+    public async Task<IActionResult> List([FromQuery] string? searchNationalNumber)
     {
         var user = await _userManager.GetUserAsync(User);
 
@@ -109,7 +109,9 @@ public class AttachmentController : ControllerBase
             return Ok(attachments);
         }
 
-        var userAttachments = await _context.Attachments.Where(a => a.UserId == user!.Id).ToListAsync();
+        var userAttachments = await _context.Attachments
+            .Where(a => a.UserId == user!.Id)
+            .ToListAsync();
 
         return Ok(userAttachments);
     }

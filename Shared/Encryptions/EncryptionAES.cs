@@ -75,4 +75,43 @@ public class EncryptionAES
         return decryptedText;
     }
 
+    public async Task<string> DecryptWithCatchAsync(string cipherText)
+    {
+        try
+        {
+            byte[] fullCipher = Convert.FromBase64String(cipherText);
+
+            using var aesAlg = Aes.Create();
+            aesAlg.Key = key;
+            aesAlg.Mode = CipherMode.CBC;
+            aesAlg.Padding = PaddingMode.PKCS7;
+
+            // Extract IV from the first part of the ciphertext
+            byte[] iv = new byte[aesAlg.BlockSize / 8];
+            Array.Copy(fullCipher, iv, iv.Length);
+
+            // Debugging: check the IV value
+            Console.WriteLine($"Decryption IV: {BitConverter.ToString(iv)}");
+
+            // Create decryptor
+            using var decryptor = aesAlg.CreateDecryptor(aesAlg.Key, iv);
+
+            // Use the remaining ciphertext after the IV
+            using var msDecrypt = new MemoryStream(fullCipher, iv.Length, fullCipher.Length - iv.Length);
+            using var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
+            using var srDecrypt = new StreamReader(csDecrypt);
+
+            var decryptedText = await srDecrypt.ReadToEndAsync();
+
+            Console.WriteLine($"Decrypted Text: {decryptedText}");
+            return decryptedText;
+        }
+        catch (CryptographicException ex)
+        {
+            Console.WriteLine($"Decryption failed: {ex.Message}");
+            throw;
+        }
+    }
+
+
 }

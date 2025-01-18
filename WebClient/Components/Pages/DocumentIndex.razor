@@ -1,5 +1,7 @@
 ﻿@page "/documents"
 
+@rendermode InteractiveServer
+
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @using WebClient.Models
 @using System.Text.Json
@@ -77,6 +79,8 @@ else
                 {
                     userToken = userSession.Token;
                 }
+
+                await LoadAttachments();
             }
             catch (Exception ex)
             {
