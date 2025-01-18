@@ -196,7 +196,7 @@ public class KeyManagementService
     public static async Task<string> EncryptSymmetricAsync(string plainText)
     {
         using var aesAlg = Aes.Create();
-        aesAlg.Key = Convert.FromBase64String(AESKey);
+        aesAlg.Key = Convert.FromBase64String(SymmetricKey);
         aesAlg.Mode = CipherMode.CBC;
         aesAlg.Padding = PaddingMode.PKCS7;
 
@@ -224,7 +224,7 @@ public class KeyManagementService
         byte[] fullCipher = Convert.FromBase64String(cipherText);
 
         using var aesAlg = Aes.Create();
-        aesAlg.Key = Convert.FromBase64String(AESKey);
+        aesAlg.Key = Convert.FromBase64String(SymmetricKey);
         aesAlg.Mode = CipherMode.CBC;
         aesAlg.Padding = PaddingMode.PKCS7;
 
