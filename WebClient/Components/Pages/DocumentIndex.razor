@@ -1,0 +1,88 @@
+﻿@using WebClient.Models
+@inject HttpClient Http
+@page "/documents"
+<h3>DocumentIndex</h3>
+
+<div>
+    <input @bind="searchNationalNumber" @bind:event="oninput" placeholder="Search by National Number" class="form-control" />
+    <button @onclick="LoadAttachments" class="btn btn-primary mt-2">Search</button>
+</div>
+
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p class="text-danger">@errorMessage</p>
+}
+else if (attachments.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>File Name</th>
+                <th>File Path</th>
+                <th>Signature</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var attachment in attachments)
+            {
+                <tr>
+                    <td>@attachment.FileName</td>
+                    <td>@attachment.FilePath</td>
+                    <td>@attachment.Signature</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No attachments found.</p>
+}
+
+@code {
+    private List<Attachment> attachments = new();
+    private string searchNationalNumber = string.Empty;
+    private bool isLoading = false;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAttachments();
+    }
+
+    private async Task LoadAttachments()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+        try
+        {
+            var query = string.IsNullOrWhiteSpace(searchNationalNumber)
+                ? string.Empty
+                : $"?searchNationalNumber={searchNationalNumber}";
+
+            var response = await Http.GetAsync($"https://localhost:7011/api/Attachment/List{query}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                attachments = await response.Content.ReadFromJsonAsync<List<Attachment>>() ?? new List<Attachment>();
+            }
+            else
+            {
+                errorMessage = $"Error: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
