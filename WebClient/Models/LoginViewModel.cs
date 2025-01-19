@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace WebClient.Models;
 
@@ -10,7 +9,7 @@ public class LoginViewModel
 
     [JsonPropertyName("password")]
     public string Password { get; set; }
-    
+
     [JsonPropertyName("rememberMe")]
     public bool RememberMe { get; set; }
 }

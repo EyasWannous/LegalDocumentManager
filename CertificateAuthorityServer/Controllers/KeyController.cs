@@ -1,7 +1,6 @@
 ﻿using CertificateAuthorityServer.Data;
 using CertificateAuthorityServer.Utilities;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Shared.Encryptions;
 using System.ComponentModel.DataAnnotations;
@@ -27,7 +26,7 @@ public class KeyController : ControllerBase
     {
         try
         {
-            if(publicKey is not null)
+            if (publicKey is not null)
             {
                 await _context.ServerCertificates.AddAsync(
                     new ServerCertificate
@@ -73,7 +72,7 @@ public class KeyController : ControllerBase
 
             return Ok();
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return StatusCode(500, ex.Message);
         }

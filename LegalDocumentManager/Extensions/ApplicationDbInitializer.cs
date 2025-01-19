@@ -28,7 +28,7 @@ public static class ApplicationDbInitializer
             Email = "01010255577",
             FullName = "Default User",
             PhoneNumber = "123456789",
-            
+
         };
 
         if (await userManager.FindByEmailAsync(defaultUser.Email) == null)

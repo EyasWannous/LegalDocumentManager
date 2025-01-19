@@ -1,11 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Text.Json;
-using LegalDocumentManager.Data;
+﻿using LegalDocumentManager.Data;
 using LegalDocumentManager.Services;
 using Shared.Encryptions;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace LegalDocumentManager.HostedServices;
 
@@ -13,7 +11,7 @@ public class KeyInitializationService : IHostedService
 {
     private readonly HttpClient _httpClient;
     private readonly IServiceProvider _serviceProvider;
-    
+
     public KeyInitializationService(IHttpClientFactory httpClientFactory, IServiceProvider serviceProvider)
     {
         _httpClient = httpClientFactory.CreateClient();
@@ -43,8 +41,9 @@ public class KeyInitializationService : IHostedService
         string symmetricKey = KeyManagementService.AESKey;
         string encryptedSymmetricKey = AsymmetricEncryptionService.Encrypt(symmetricKey, publicKeyResult);
 
-        var hashedKey = new {
-            hashedKey = encryptedSymmetricKey 
+        var hashedKey = new
+        {
+            hashedKey = encryptedSymmetricKey
         };
 
         var content = new StringContent(
@@ -57,8 +56,9 @@ public class KeyInitializationService : IHostedService
 
         if (!sendKeyResponse.IsSuccessStatusCode)
             throw new Exception("Couldn't send key to CA");
-        
-        var certificateRequest = new {
+
+        var certificateRequest = new
+        {
             issuedTo = "Syria.org.sy",
             expiry = DateTime.Now.AddYears(10),
             clientPublicKey = myPublicKey,
@@ -81,7 +81,7 @@ public class KeyInitializationService : IHostedService
             throw new Exception("Couldn't deserialize certificate");
 
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-         
+
         await context.Certificates.AddAsync(certificate, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
     }

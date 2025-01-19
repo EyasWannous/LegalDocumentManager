@@ -37,13 +37,13 @@ public class CertificateController : ControllerBase
 
         var serverCert = await _context.ServerCertificates.FirstOrDefaultAsync(x => x.Host == request.Host);
 
-        if (serverCert is null  || serverCert.PublicKey is null)
+        if (serverCert is null || serverCert.PublicKey is null)
             return NotFound();
 
         byte[] signatureBytes = Convert.FromBase64String(request.Signature);
 
         bool isValid = await _keyManagementService.VerifySignatureAsync(request.OriginalData, signatureBytes, serverCert.PublicKey);
-        
+
         return Ok(new { IsValid = isValid });
     }
 
@@ -63,7 +63,7 @@ public class CertificateController : ControllerBase
             serverCert.Certificate = await _keyManagementService.GenerateCertificateAsync(request);
 
             await _context.SaveChangesAsync();
-             
+
             return Ok(serverCert.Certificate);
         }
         catch (ArgumentException ex)
@@ -93,7 +93,7 @@ public class CertificateController : ControllerBase
     public async Task<IActionResult> GetHostCertificate(string host)
     {
         var certificate = await _context.ServerCertificates.FirstOrDefaultAsync(x => x.Host == host);
-        
+
         if (certificate is null || certificate.Certificate is null)
             return BadRequest("No certificate exists.");
 

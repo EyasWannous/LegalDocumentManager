@@ -5,7 +5,7 @@ namespace CertificateAuthorityServer.Data;
 public class ServerCertificate
 {
     public int Id { get; set; }
-    
+
     [Required]
     public string Host { get; set; }
     public string? Key { get; set; }

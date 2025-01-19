@@ -1,16 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Security.Cryptography.Xml;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using LegalDocumentManager.Data;
+﻿using LegalDocumentManager.Data;
 using LegalDocumentManager.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Shared.Encryptions;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Attachment = LegalDocumentManager.Data.Attachment;
 
 namespace LegalDocumentManager.Controllers;
@@ -65,7 +62,7 @@ public class AttachmentController : ControllerBase
 
             await System.IO.File.WriteAllBytesAsync(filePath, decryptedFile);
 
-            if(!await ScanService.ScanFileWithWindowsDefenderAsync(Path.GetFullPath(filePath)))
+            if (!await ScanService.ScanFileWithWindowsDefenderAsync(Path.GetFullPath(filePath)))
             {
                 System.IO.File.Delete(filePath);
             }
@@ -180,7 +177,7 @@ public class UploadViewModel
     [Required]
     [JsonPropertyName("encryptedFile")]
     public string EncryptedFile { get; set; }
-    
+
     [Required]
     [JsonPropertyName("fileName")]
     public string FileName { get; set; }
