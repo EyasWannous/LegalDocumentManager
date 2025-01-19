@@ -5,6 +5,7 @@ using LegalDocumentManager.Data;
 using LegalDocumentManager.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -137,7 +138,13 @@ public class AttachmentController : ControllerBase
         var fileName = Path.GetFileName(filePath);
         var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
 
-        return File(fileBytes, "application/octet-stream", fileName);
+        var result = new UploadViewModel
+        {
+            FileName = fileName,
+            EncryptedFile = await KeyManagementService.EncryptSymmetricAsync(Convert.ToBase64String(fileBytes))
+        };
+
+        return Ok(result);
     }
 
     [HttpGet("GetSignature/{id:int}")]
