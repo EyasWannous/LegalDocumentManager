@@ -1,6 +1,7 @@
 ﻿using CertificateAuthorityServer.Data;
 using CertificateAuthorityServer.Utilities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Shared.Encryptions;
 using System.ComponentModel.DataAnnotations;
@@ -22,19 +23,21 @@ public class KeyController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> ExchangePublicKeys(string publicKey)
+    public async Task<IActionResult> ExchangePublicKeys(string? publicKey)
     {
         try
         {
-            await _context.ServerCertificates.AddAsync(
-                new ServerCertificate
-                {
-                    Host = HttpContext.Request.Host.Value,
-                    PublicKey = publicKey,
-                }
-            );
-
-            await _context.SaveChangesAsync();
+            if(publicKey is not null)
+            {
+                await _context.ServerCertificates.AddAsync(
+                    new ServerCertificate
+                    {
+                        Host = HttpContext.Request.Host.Value,
+                        PublicKey = publicKey,
+                    }
+                );
+                await _context.SaveChangesAsync();
+            }
 
             using RSA rsa = await _keyManagementService.GetPublicKeyAsync();
 

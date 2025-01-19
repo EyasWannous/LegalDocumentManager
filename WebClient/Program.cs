@@ -24,7 +24,7 @@ using (var scope = app.Services.CreateScope())
     var keyManagementService = scope.ServiceProvider.GetRequiredService<KeyManagementService>();
     await keyManagementService.GenerateKeyPairAsync();
     await keyManagementService.GetServerPublicKeyAsync();
-    await keyManagementService.FetchSymmetricKeyAsync();
+    await keyManagementService.GetCAPublicKey();
 }
 
 if (!app.Environment.IsDevelopment())

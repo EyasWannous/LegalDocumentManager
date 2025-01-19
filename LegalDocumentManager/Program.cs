@@ -153,9 +153,9 @@ builder.Services.AddSwaggerGen(option =>
 
 var app = builder.Build();
 
-await ScanService.ScanFileWithWindowsDefenderAsync(
-    @"C:\Users\eyasw\source\repos\EyasWannous\LegalDocumentManager\LegalDocumentManager\wwwroot\uploads\imagee7368442-b79d-4126-bbde-9cbd1361dd2b.jpg"
-);
+//await ScanService.ScanFileWithWindowsDefenderAsync(
+//    @"C:\Users\eyasw\source\repos\EyasWannous\LegalDocumentManager\LegalDocumentManager\wwwroot\uploads\imagee7368442-b79d-4126-bbde-9cbd1361dd2b.jpg"
+//);
 
 app.UseCors("AllowSpecificOrigin");
 

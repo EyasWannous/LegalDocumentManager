@@ -13,6 +13,8 @@ public class KeyManagementService
     private const string PublicKeyPath = "Keys/public_key.pem";
     private const string Passphrase = "YourSecurePassphraseHere";
     private const string ServerKeysURL = "https://localhost:7011/api/keys";
+    private const string CertificateAuthorityURL = "https://localhost:7154/api/key";
+    public static RSA CAPublicKey = null;
     public static RSA ServerPublicKey = null;
     public static string SymmetricKey = null;
 
@@ -242,6 +244,29 @@ public class KeyManagementService
 
         //Console.WriteLine($"Decrypted Text: {decryptedText}");
         return decryptedText;
+    }
+
+    public async Task GetCAPublicKey()
+    {
+        try
+        {
+            var requestUrl = $"{CertificateAuthorityURL}";
+
+            var _httpClient = new HttpClient();
+
+            HttpResponseMessage response = await _httpClient.GetAsync(requestUrl);
+
+            response.EnsureSuccessStatusCode();
+
+            string publicKeyString = await response.Content.ReadAsStringAsync();
+
+            CAPublicKey = ConvertBase64PublicKeyToRsa(publicKeyString);
+        }
+        catch (Exception ex)
+        {
+            // Handle or log the exception as needed
+            throw new ApplicationException("Failed to fetch the public key.", ex);
+        }
     }
 }
 
