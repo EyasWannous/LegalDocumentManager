@@ -135,12 +135,11 @@ public class AttachmentController : ControllerBase
             return NotFound();
 
         var filePath = Path.Combine(Directory.GetCurrentDirectory(), $"wwwroot/{attachment.FilePath}");
-        var fileName = Path.GetFileName(filePath);
         var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
 
         var result = new UploadViewModel
         {
-            FileName = fileName,
+            FileName = attachment.FileName,
             EncryptedFile = await KeyManagementService.EncryptSymmetricAsync(Convert.ToBase64String(fileBytes))
         };
 
