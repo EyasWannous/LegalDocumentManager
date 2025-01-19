@@ -26,3 +26,308 @@
 .content {
     padding: 20px;
 }
+
+/* === Global Styles === */
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    font-family: var(--font-family);
+    margin: 0;
+    padding: 0;
+    background-color: var(--light-color);
+    color: var(--dark-color);
+}
+
+/* === Typography === */
+h1, h2, h3, h4, h5, h6 {
+    margin: 0.5em 0;
+    color: var(--dark-color);
+}
+
+h1 {
+    font-size: 2.5rem;
+}
+
+h2 {
+    font-size: 2rem;
+}
+
+h3 {
+    font-size: 1.75rem;
+}
+
+h4 {
+    font-size: 1.5rem;
+}
+
+h5 {
+    font-size: 1.25rem;
+}
+
+h6 {
+    font-size: 1rem;
+}
+
+p {
+    line-height: 1.6;
+    margin: 0.5em 0;
+}
+
+/* === Buttons === */
+button {
+    font-family: var(--font-family);
+    font-size: 1rem;
+    padding: 0.5em 1em;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+    .btn-primary:hover {
+        background-color: darken(var(--primary-color), 10%);
+    }
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+    .btn-secondary:hover {
+        background-color: darken(var(--secondary-color), 10%);
+    }
+
+.btn-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+    .btn-success:hover {
+        background-color: darken(var(--success-color), 10%);
+    }
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+    .btn-danger:hover {
+        background-color: darken(var(--danger-color), 10%);
+    }
+
+/* === Forms === */
+form {
+    max-width: 600px;
+    margin: 2em auto;
+    padding: 1em;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    margin-bottom: 1em;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+    width: 100%;
+    padding: 0.5em;
+    border: 1px solid var(--secondary-color);
+    border-radius: 4px;
+    font-family: var(--font-family);
+    font-size: 1rem;
+}
+
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="password"]:focus,
+    textarea:focus,
+    select:focus {
+        border-color: var(--primary-color);
+        outline: none;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    }
+
+textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* === Navigation === */
+.navbar {
+    background-color: var(--primary-color);
+    padding: 1em;
+    color: white;
+}
+
+    .navbar a {
+        color: white;
+        text-decoration: none;
+        margin-right: 1em;
+    }
+
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+
+/* === Tables === */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+}
+
+th, td {
+    padding: 0.75em;
+    text-align: left;
+    border-bottom: 1px solid var(--secondary-color);
+}
+
+th {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+tr:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* === Cards === */
+.card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 1em;
+    margin: 1em 0;
+}
+
+.card-header {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+}
+
+.card-body {
+    font-size: 1rem;
+}
+
+/* === Alerts === */
+.alert {
+    padding: 1em;
+    border-radius: 4px;
+    margin: 1em 0;
+}
+
+.alert-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.alert-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.alert-warning {
+    background-color: var(--warning-color);
+    color: var(--dark-color);
+}
+
+.alert-info {
+    background-color: var(--info-color);
+    color: white;
+}
+
+/* === Utility Classes === */
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.mt-1 {
+    margin-top: 0.25em;
+}
+
+.mt-2 {
+    margin-top: 0.5em;
+}
+
+.mt-3 {
+    margin-top: 1em;
+}
+
+.mt-4 {
+    margin-top: 1.5em;
+}
+
+.mt-5 {
+    margin-top: 2em;
+}
+
+.mb-1 {
+    margin-bottom: 0.25em;
+}
+
+.mb-2 {
+    margin-bottom: 0.5em;
+}
+
+.mb-3 {
+    margin-bottom: 1em;
+}
+
+.mb-4 {
+    margin-bottom: 1.5em;
+}
+
+.mb-5 {
+    margin-bottom: 2em;
+}
+
+.p-1 {
+    padding: 0.25em;
+}
+
+.p-2 {
+    padding: 0.5em;
+}
+
+.p-3 {
+    padding: 1em;
+}
+
+.p-4 {
+    padding: 1.5em;
+}
+
+.p-5 {
+    padding: 2em;
+}

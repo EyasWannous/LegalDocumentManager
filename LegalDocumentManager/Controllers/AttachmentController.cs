@@ -63,7 +63,12 @@ public class AttachmentController : ControllerBase
 
             await System.IO.File.WriteAllBytesAsync(filePath, decryptedFile);
 
-            var signature = await _keyService.SignDataAsync(upload.EncryptedFile);
+            if(!await ScanService.ScanFileWithWindowsDefenderAsync(Path.GetFullPath(filePath)))
+            {
+                System.IO.File.Delete(filePath);
+            }
+
+            var signature = await _keyService.SignDataAsync(decryptedFileString);
 
             var attachment = new Attachment
             {
