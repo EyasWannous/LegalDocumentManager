@@ -9,6 +9,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddScoped<KeyManagementService>();
+builder.Services.AddScoped<CertificateService>();
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
@@ -22,9 +23,16 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var keyManagementService = scope.ServiceProvider.GetRequiredService<KeyManagementService>();
+
     await keyManagementService.GenerateKeyPairAsync();
     await keyManagementService.GetServerPublicKeyAsync();
     await keyManagementService.GetCAPublicKey();
+    await keyManagementService.FetchSymmetricKeyAsync();
+
+    var certificateService = scope.ServiceProvider.GetRequiredService<CertificateService>();
+
+    await certificateService.GetCertificateAsync();
+    await keyManagementService.VerifyCertificate(CertificateService.Certificate!);
 }
 
 if (!app.Environment.IsDevelopment())

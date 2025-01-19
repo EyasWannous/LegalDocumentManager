@@ -1,8 +1,6 @@
-﻿using System.Net.Http;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
+﻿using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using System.Text.Json;
 
 namespace WebClient;
 
@@ -17,6 +15,7 @@ public class KeyManagementService
     public static RSA CAPublicKey = null;
     public static RSA ServerPublicKey = null;
     public static string SymmetricKey = null;
+    public static bool IsValidSignature = false;
 
     public KeyManagementService()
     {
@@ -268,5 +267,63 @@ public class KeyManagementService
             throw new ApplicationException("Failed to fetch the public key.", ex);
         }
     }
+    public async Task VerifyCertificate(Certificate certificate)
+    {
+        if (certificate == null)
+            throw new ArgumentNullException(nameof(certificate), "Certificate cannot be null.");
+
+        if (CAPublicKey == null)
+            throw new InvalidOperationException("CA public key is not available. Fetch it using GetCAPublicKey.");
+
+        try
+        {
+            // Recreate the certificate data string
+            string certificateData = JsonSerializer.Serialize(new
+            {
+                certificate.IssuedTo,
+                certificate.IssuedFrom,
+                certificate.IssuedAt,
+                certificate.Expiry,
+                certificate.ClientPublicKey
+            });
+
+            // Convert the signature from Base64 to byte array
+            byte[] signatureBytes = Convert.FromBase64String(certificate.Signature);
+
+            // Verify the signature using the CA public key
+            byte[] certificateDataBytes = Encoding.UTF8.GetBytes(certificateData);
+            bool isValidSignature = CAPublicKey.VerifyData(
+                certificateDataBytes,
+                signatureBytes,
+                HashAlgorithmName.SHA256,
+                RSASignaturePadding.Pkcs1
+            );
+
+            if (!isValidSignature)
+                throw new CryptographicException("Invalid certificate signature.");
+
+            IsValidSignature = isValidSignature;
+
+            // Validate the certificate fields
+            if (certificate.Expiry < DateTime.Now)
+                throw new InvalidOperationException("The certificate has expired.");
+
+            if (string.IsNullOrEmpty(certificate.IssuedTo) || string.IsNullOrEmpty(certificate.IssuedFrom))
+                throw new InvalidOperationException("The certificate has missing fields.");
+
+            // Ensure the certificate was issued by the expected authority
+            if (certificate.IssuedFrom != "Certifier.com") // Replace with your CA URL
+                throw new InvalidOperationException("The certificate was not issued by a trusted authority.");
+
+            // If all checks pass
+            Console.WriteLine("Certificate is valid.");
+        }
+        catch (Exception ex)
+        {
+            throw new ApplicationException("Certificate verification failed.", ex);
+        }
+    }
+
+
 }
 
