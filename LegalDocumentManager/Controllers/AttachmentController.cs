@@ -73,8 +73,8 @@ public class AttachmentController : ControllerBase
 
             var attachment = new Attachment
             {
-                FilePath = $"/uploads/{upload.FileName}",
-                FileName = fileNameToStore,
+                FilePath = $"/uploads/{fileNameToStore}",
+                FileName = upload.FileName,
                 UserId = user.Id,
                 Signature = Convert.ToBase64String(signature)
             };

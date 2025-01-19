@@ -494,4 +494,4 @@ Keys/*
 /CertificateAuthorityServer/Keys/private_key.pem
 /CertificateAuthorityServer/Keys/public_key.pem
 
-uploads/*
+LegalDocumentManager/wwwroot/uploads
