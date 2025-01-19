@@ -124,7 +124,7 @@ public class KeyManagementService
         return rsa;
     }
 
-    public async Task<string> EncryptSymmetricAsync(string plainText)
+    public static async Task<string> EncryptSymmetricAsync(string plainText)
     {
         using var aesAlg = Aes.Create();
         aesAlg.Key = Convert.FromBase64String(AESKey);
@@ -150,7 +150,7 @@ public class KeyManagementService
         return Convert.ToBase64String(encryptedBytes);
     }
 
-    public async Task<string> DecryptSymmetricAsync(string cipherText)
+    public static async Task<string> DecryptSymmetricAsync(string cipherText)
     {
         byte[] fullCipher = Convert.FromBase64String(cipherText);
 

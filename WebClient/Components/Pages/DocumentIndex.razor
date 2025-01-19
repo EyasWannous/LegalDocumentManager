@@ -117,8 +117,14 @@ else
 
             if (response.IsSuccessStatusCode)
             {
-                var decBody = await KeyManagementService.DecryptSymmetricAsync(await response.Content.ReadAsStringAsync());
-                attachments = JsonSerializer.Deserialize<List<Attachment>>(decBody) ?? new List<Attachment>();
+                var res = await response.Content.ReadAsStringAsync();
+                if (string.IsNullOrWhiteSpace(await response.Content.ReadAsStringAsync()) || res == "[]")
+                    attachments = new List<Attachment>();
+                else
+                {
+                    var decBody = await KeyManagementService.DecryptSymmetricAsync(await response.Content.ReadAsStringAsync());
+                    attachments = JsonSerializer.Deserialize<List<Attachment>>(decBody) ?? new List<Attachment>();
+                }
             }
             else
             {

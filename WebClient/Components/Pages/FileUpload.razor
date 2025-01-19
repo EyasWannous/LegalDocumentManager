@@ -82,17 +82,19 @@
             var fileBytes = memoryStream.ToArray();
 
             // Encrypt the file
-            var encryptedFile = EncryptFile(fileBytes, KeyManagementService.SymmetricKey);
+            // var encryptedFile = KeyManagementService.EncryptSymmetricAsync EncryptFile(fileBytes, KeyManagementService.SymmetricKey);
 
             // Prepare the upload view model (JSON payload)
             var uploadModel = new UploadViewModel
                 {
-                    EncryptedFile = Convert.ToBase64String(encryptedFile),
+                    EncryptedFile = Convert.ToBase64String(fileBytes),
                     FileName = FileName
                 };
 
             // Send the data as JSON
-            var response = await Http.PostAsJsonAsync("https://localhost:7011/api/Attachment/Upload", uploadModel);
+            var response = await Http.PostAsJsonAsync("https://localhost:7011/api/Attachment/Upload", 
+                await KeyManagementService.EncryptSymmetricAsync(JsonSerializer.Serialize(uploadModel))
+            );
 
             if (response.IsSuccessStatusCode)
             {
@@ -114,23 +116,6 @@
         {
             IsLoading = false;
         }
-    }
-
-    private byte[] EncryptFile(byte[] fileBytes, string symmetricKey)
-    {
-        using var aes = Aes.Create();
-        aes.Key = Convert.FromBase64String(symmetricKey);
-        aes.GenerateIV();
-
-        using var encryptor = aes.CreateEncryptor();
-        using var ms = new MemoryStream();
-        ms.Write(aes.IV, 0, aes.IV.Length); // Prepend IV to the encrypted data
-        using (var cryptoStream = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
-        {
-            cryptoStream.Write(fileBytes, 0, fileBytes.Length);
-        }
-
-        return ms.ToArray();
     }
 
     public class UploadViewModel

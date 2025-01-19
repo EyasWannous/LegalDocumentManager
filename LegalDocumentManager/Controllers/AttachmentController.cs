@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using LegalDocumentManager.Data;
 using LegalDocumentManager.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -29,10 +30,12 @@ public class AttachmentController : ControllerBase
     }
 
     [HttpPost("Upload")]
-    public async Task<IActionResult> Upload([FromBody] UploadViewModel input)
+    public async Task<IActionResult> Upload([FromBody] string input)
     {
         try
         {
+            var upload = JsonSerializer.Deserialize<UploadViewModel>(await KeyManagementService.DecryptSymmetricAsync(input));
+
             var user = await _userManager.GetUserAsync(User);
 
             if (user is null)
@@ -40,14 +43,14 @@ public class AttachmentController : ControllerBase
                 return BadRequest("");
             }
 
-            if (string.IsNullOrWhiteSpace(input.EncryptedFile) || string.IsNullOrWhiteSpace(input.FileName))
+            if (string.IsNullOrWhiteSpace(upload.EncryptedFile) || string.IsNullOrWhiteSpace(upload.FileName))
             {
                 return BadRequest("");
             }
 
-            var encryptionService = new EncryptionAES(KeyManagementService.AESKey);
-            var decryptedFileString = await encryptionService.DecryptWithCatchAsync(input.EncryptedFile);
-            var decryptedFile = Convert.FromBase64String(decryptedFileString);
+            //var encryptionService = new EncryptionAES(KeyManagementService.AESKey);
+            //var decryptedFileString = await KeyManagementService.DecryptSymmetricAsync(upload.EncryptedFile);
+            var decryptedFile = Convert.FromBase64String(upload.EncryptedFile);
 
             var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
             if (!Directory.Exists(uploadsPath))
@@ -55,16 +58,16 @@ public class AttachmentController : ControllerBase
                 Directory.CreateDirectory(uploadsPath);
             }
 
-            var fileNameToStore = Path.GetFileNameWithoutExtension(input.FileName) + Guid.NewGuid().ToString() + Path.GetExtension(input.FileName);
+            var fileNameToStore = Path.GetFileNameWithoutExtension(upload.FileName) + Guid.NewGuid().ToString() + Path.GetExtension(upload.FileName);
             var filePath = Path.Combine(uploadsPath, fileNameToStore);
 
             await System.IO.File.WriteAllBytesAsync(filePath, decryptedFile);
 
-            var signature = await _keyService.SignDataAsync(decryptedFileString);
+            var signature = await _keyService.SignDataAsync(upload.EncryptedFile);
 
             var attachment = new Attachment
             {
-                FilePath = $"/uploads/{input.FileName}",
+                FilePath = $"/uploads/{upload.FileName}",
                 FileName = fileNameToStore,
                 UserId = user.Id,
                 Signature = Convert.ToBase64String(signature)
@@ -104,7 +107,7 @@ public class AttachmentController : ControllerBase
             }
             var attachments = await attachmentsQuery.ToListAsync();
 
-            var encAttachments = _keyService.EncryptSymmetricAsync(JsonSerializer.Serialize(attachments));
+            var encAttachments = await KeyManagementService.EncryptSymmetricAsync(JsonSerializer.Serialize(attachments));
 
             return Ok(attachments);
         }
@@ -160,8 +163,10 @@ public class AttachmentController : ControllerBase
 public class UploadViewModel
 {
     [Required]
+    [JsonPropertyName("encryptedFile")]
     public string EncryptedFile { get; set; }
     
     [Required]
+    [JsonPropertyName("fileName")]
     public string FileName { get; set; }
 }
