@@ -69,7 +69,7 @@ public class AttachmentController : ControllerBase
                 System.IO.File.Delete(filePath);
             }
 
-            var signature = await _keyService.SignDataAsync(decryptedFileString);
+            var signature = await _keyService.SignDataAsync(upload.EncryptedFile);
 
             var attachment = new Attachment
             {
