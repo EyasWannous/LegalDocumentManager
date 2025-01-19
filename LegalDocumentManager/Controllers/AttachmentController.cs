@@ -116,10 +116,12 @@ public class AttachmentController : ControllerBase
             .Where(a => a.UserId == user!.Id)
             .ToListAsync();
 
-        return Ok(userAttachments);
+        var userEncAttachments = await KeyManagementService.EncryptSymmetricAsync(JsonSerializer.Serialize(userAttachments));
+
+        return Ok(userEncAttachments);
     }
 
-    [HttpGet("Download")]
+    [HttpGet("Download/{id:int}")]
     public async Task<IActionResult> Download([FromRoute] int id)
     {
         var attachment = await _context.Attachments.FindAsync(id);
@@ -133,7 +135,7 @@ public class AttachmentController : ControllerBase
         return File(fileBytes, "application/octet-stream", fileName);
     }
 
-    [HttpGet("GetSignature")]
+    [HttpGet("GetSignature/{id:int}")]
     public async Task<IActionResult> GetSignature([FromRoute] int id)
     {
         var attachment = await _context.Attachments.FindAsync(id);
@@ -143,7 +145,7 @@ public class AttachmentController : ControllerBase
         return Ok(attachment.Signature);
     }
 
-    [HttpPost("Delete")]
+    [HttpPost("Delete/{id:int}")]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {
         var attachment = await _context.Attachments.FindAsync(id);
