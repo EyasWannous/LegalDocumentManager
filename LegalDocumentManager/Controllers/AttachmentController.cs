@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography.Xml;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LegalDocumentManager.Data;
@@ -115,7 +116,7 @@ public class AttachmentController : ControllerBase
 
             var encAttachments = await KeyManagementService.EncryptSymmetricAsync(JsonSerializer.Serialize(attachments));
 
-            return Ok(attachments);
+            return Ok(encAttachments);
         }
 
         var userAttachments = await _context.Attachments
@@ -137,10 +138,11 @@ public class AttachmentController : ControllerBase
         var filePath = Path.Combine(Directory.GetCurrentDirectory(), $"wwwroot/{attachment.FilePath}");
         var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
 
-        var result = new UploadViewModel
+        var result = new
         {
             FileName = attachment.FileName,
-            EncryptedFile = await KeyManagementService.EncryptSymmetricAsync(Convert.ToBase64String(fileBytes))
+            EncryptedFile = await KeyManagementService.EncryptSymmetricAsync(Convert.ToBase64String(fileBytes)),
+            Signature = attachment.Signature
         };
 
         return Ok(result);
