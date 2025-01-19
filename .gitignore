@@ -493,3 +493,5 @@ Keys/*
 /WebClient/Keys/public_key.pem
 /CertificateAuthorityServer/Keys/private_key.pem
 /CertificateAuthorityServer/Keys/public_key.pem
+
+uploads/*
