@@ -1,4 +1,6 @@
+using CertificateAuthorityServer.Data;
 using CertificateAuthorityServer.Utilities;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +13,18 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<KeyManagementService>();
 
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseInMemoryDatabase("CADB")
+);
+    
+
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var keyManagementService = scope.ServiceProvider.GetRequiredService<KeyManagementService>();
+    await keyManagementService.GenerateKeyPairAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

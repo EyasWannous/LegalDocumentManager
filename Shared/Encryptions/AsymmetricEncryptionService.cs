@@ -3,13 +3,22 @@ using System.Text;
 
 namespace Shared.Encryptions;
 
-public class AsymmetricEncryptionService
+public static class AsymmetricEncryptionService
 {
     // Encrypt a message using the recipient's public key
     public static string Encrypt(string plainText, string publicKey)
     {
         using var rsa = RSA.Create();
         rsa.ImportRSAPublicKey(Convert.FromBase64String(publicKey), out _);
+
+        byte[] encryptedData = rsa.Encrypt(Encoding.UTF8.GetBytes(plainText), RSAEncryptionPadding.OaepSHA256);
+        return Convert.ToBase64String(encryptedData);
+    }
+
+    public static string EncryptWithInfo(string plainText, string publicKey)
+    {
+        using var rsa = RSA.Create();
+        rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(publicKey), out _);
 
         byte[] encryptedData = rsa.Encrypt(Encoding.UTF8.GetBytes(plainText), RSAEncryptionPadding.OaepSHA256);
         return Convert.ToBase64String(encryptedData);

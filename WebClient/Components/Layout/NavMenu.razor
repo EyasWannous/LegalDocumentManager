@@ -1,0 +1,75 @@
+﻿<div class="nav-menu @NavMenuCssClass" @onclick="ToggleNavMenu">
+    <ul class="nav flex-column">
+        <!-- Home -->
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Home
+            </NavLink>
+        </li>
+
+        <!-- Login -->
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="/login">
+                <span class="oi oi-account-login" aria-hidden="true"></span> Login
+            </NavLink>
+        </li>
+
+        <!-- Register -->
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="/register">
+                <span class="oi oi-person" aria-hidden="true"></span> Register
+            </NavLink>
+        </li>
+
+        <!-- Documents -->
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="/documents">
+                <span class="oi oi-folder" aria-hidden="true"></span> Documents
+            </NavLink>
+        </li>
+
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="/upload">
+                <span class="oi oi-cloud-upload" aria-hidden="true"></span> Upload Document
+            </NavLink>
+        </li>
+
+    </ul>
+</div>
+
+<style>
+    .nav-menu {
+        background-color: #343a40;
+        height: 100%;
+        width: 250px; /* Adjust width as needed */
+    }
+
+    .nav-link {
+        color: #adb5bd;
+        font-weight: 500;
+        transition: color 0.3s;
+    }
+
+        .nav-link:hover {
+            color: #fff;
+        }
+
+    .collapse {
+        display: none; /* Hides the menu */
+    }
+
+        .collapse.show {
+            display: block; /* Ensures the menu shows when toggled */
+        }
+</style>
+
+@code {
+    private bool collapseNavMenu = false; // Ensure the menu is open by default
+
+    private string? NavMenuCssClass => collapseNavMenu ? "show" : "collapse";
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

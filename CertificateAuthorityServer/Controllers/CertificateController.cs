@@ -1,8 +1,8 @@
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
+using CertificateAuthorityServer.Controllers.Dtos;
+using CertificateAuthorityServer.Data;
 using CertificateAuthorityServer.Utilities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CertificateAuthorityServer.Controllers;
 
@@ -11,45 +11,60 @@ namespace CertificateAuthorityServer.Controllers;
 public class CertificateController : ControllerBase
 {
     private readonly KeyManagementService _keyManagementService;
+    private readonly ApplicationDbContext _context;
 
-    public CertificateController(KeyManagementService keyManagementService)
+    public CertificateController(KeyManagementService keyManagementService, ApplicationDbContext context)
     {
         _keyManagementService = keyManagementService;
+        _context = context;
     }
 
-    [HttpPost("sign")]
-    public IActionResult Sign([FromBody] string data)
-    {
-        if (string.IsNullOrEmpty(data))
-            return BadRequest("Data to sign cannot be empty.");
+    //[HttpPost("sign")]
+    //public async Task<IActionResult> Sign([FromBody] string data)
+    //{
+    //    if (string.IsNullOrEmpty(data))
+    //        return BadRequest("Data to sign cannot be empty.");
 
-        var signature = _keyManagementService.SignData(data);
-        return Ok(new { Signature = Convert.ToBase64String(signature) });
-    }
+    //    var signature = await _keyManagementService.SignDataAsync(data);
+    //    return Ok(new { Signature = Convert.ToBase64String(signature) });
+    //}
 
     [HttpPost("verify")]
-    public IActionResult Verify([FromBody] VerifyRequest request)
+    public async Task<IActionResult> Verify([FromBody] VerifyRequest request)
     {
         if (string.IsNullOrEmpty(request.OriginalData) || string.IsNullOrEmpty(request.Signature))
             return BadRequest("Original data and signature cannot be empty.");
 
+        var serverCert = await _context.ServerCertificates.FirstOrDefaultAsync(x => x.Host == request.Host);
+
+        if (serverCert is null  || serverCert.PublicKey is null)
+            return NotFound();
+
         byte[] signatureBytes = Convert.FromBase64String(request.Signature);
-        bool isValid = _keyManagementService.VerifySignature(request.OriginalData, signatureBytes);
+
+        bool isValid = await _keyManagementService.VerifySignatureAsync(request.OriginalData, signatureBytes, serverCert.PublicKey);
+        
         return Ok(new { IsValid = isValid });
     }
 
     [HttpPost("generate-certificate")]
-    public IActionResult GenerateCertificate([FromBody] CertificateRequest request)
+    public async Task<IActionResult> GenerateCertificate([FromBody] CertificateRequest request)
     {
-        if (request == null || string.IsNullOrEmpty(request.ClientPublicKey))
-        {
+        if (request is null || string.IsNullOrEmpty(request.ClientPublicKey))
             return BadRequest("Invalid request. A client public key is required.");
-        }
+
+        var serverCert = await _context.ServerCertificates.FirstOrDefaultAsync(x => x.Host == HttpContext.Request.Host.Value);
+
+        if (serverCert is null)
+            return BadRequest();
 
         try
         {
-            var certificate = _keyManagementService.GenerateCertificate(request);
-            return Ok(certificate);
+            serverCert.Certificate = await _keyManagementService.GenerateCertificateAsync(request);
+
+            await _context.SaveChangesAsync();
+             
+            return Ok(serverCert.Certificate);
         }
         catch (ArgumentException ex)
         {
@@ -58,16 +73,14 @@ public class CertificateController : ControllerBase
     }
 
     [HttpPost("validate-certificate")]
-    public IActionResult ValidateCertificate([FromBody] Certificate certificate)
+    public async Task<IActionResult> ValidateCertificate([FromBody] Certificate certificate)
     {
         if (certificate == null || string.IsNullOrEmpty(certificate.Signature))
-        {
             return BadRequest("Invalid certificate. A valid signature is required.");
-        }
 
         try
         {
-            bool isValid = _keyManagementService.ValidateCertificate(certificate);
+            bool isValid = await _keyManagementService.ValidateCertificateAsync(certificate);
             return Ok(new { IsValid = isValid });
         }
         catch (Exception ex)
@@ -75,27 +88,22 @@ public class CertificateController : ControllerBase
             return StatusCode(500, new { Error = ex.Message });
         }
     }
-}
 
-public class VerifyRequest
-{
-    public string OriginalData { get; set; }
-    public string Signature { get; set; }
-}
+    [HttpGet]
+    public async Task<IActionResult> GetHostCertificate(string host)
+    {
+        var certificate = await _context.ServerCertificates.FirstOrDefaultAsync(x => x.Host == host);
+        
+        if (certificate is null || certificate.Certificate is null)
+            return BadRequest("No certificate exists.");
 
-public class CertificateRequest
-{
-    public string IssuedTo { get; set; }
-    public DateTime Expiry { get; set; }
-    public string ClientPublicKey { get; set; } // Base64-encoded client public key
-}
-
-public class Certificate
-{
-    public string IssuedTo { get; set; }
-    public string IssuedFrom { get; set; }
-    public DateTime IssuedAt { get; set; }
-    public DateTime Expiry { get; set; }
-    public string ClientPublicKey { get; set; }
-    public string Signature { get; set; } // CA's signature for the certificate
+        try
+        {
+            return Ok(new { certificate.Certificate });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = ex.Message });
+        }
+    }
 }

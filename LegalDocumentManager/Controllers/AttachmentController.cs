@@ -1,5 +1,12 @@
-﻿using LegalDocumentManager.Data;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography.Xml;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using LegalDocumentManager.Data;
+using LegalDocumentManager.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,49 +15,44 @@ using Attachment = LegalDocumentManager.Data.Attachment;
 
 namespace LegalDocumentManager.Controllers;
 
-[Authorize]
-public class AttachmentController : Controller
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[ApiController]
+[Route("api/[controller]")]
+public class AttachmentController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly KeyManagementService _keyService;
 
-    public AttachmentController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+    public AttachmentController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, KeyManagementService keyService)
     {
         _context = context;
         _userManager = userManager;
+        _keyService = keyService;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> Upload()
-    {
-        // Pass the Public Key to the View
-        ViewData["PublicKey"] = Constant.Keys.Values.FirstOrDefault();
-
-        return await Task.FromResult(View());
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Upload([FromForm] string encryptedFile, [FromForm] string fileName)
+    [HttpPost("Upload")]
+    public async Task<IActionResult> Upload([FromBody] string input)
     {
         try
         {
+            var upload = JsonSerializer.Deserialize<UploadViewModel>(await KeyManagementService.DecryptSymmetricAsync(input));
+
             var user = await _userManager.GetUserAsync(User);
 
             if (user is null)
             {
-                TempData["Error"] = "You must be logged in to upload files.";
-                return RedirectToAction(nameof(AccountController.Login), "Account");
+                return BadRequest("");
             }
 
-            if (string.IsNullOrWhiteSpace(encryptedFile) || string.IsNullOrWhiteSpace(fileName))
+            if (string.IsNullOrWhiteSpace(upload.EncryptedFile) || string.IsNullOrWhiteSpace(upload.FileName))
             {
-                TempData["Error"] = "Please select a valid file.";
-                return View();
+                return BadRequest("");
             }
 
-            var encryptionService = new EncryptionAES(Constant.key);
-            var decryptedFileString = await encryptionService.DecryptAsync(encryptedFile);
-            var decryptedFile = Convert.FromBase64String(decryptedFileString);
+            //var encryptionService = new EncryptionAES(KeyManagementService.AESKey);
+            //var decryptedFileString = await KeyManagementService.DecryptSymmetricAsync(upload.EncryptedFile);
+            var decryptedFile = Convert.FromBase64String(upload.EncryptedFile);
 
             var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
             if (!Directory.Exists(uploadsPath))
@@ -58,42 +60,45 @@ public class AttachmentController : Controller
                 Directory.CreateDirectory(uploadsPath);
             }
 
-            var fileNameToStore = Path.GetFileNameWithoutExtension(fileName) + Guid.NewGuid().ToString() + Path.GetExtension(fileName);
+            var fileNameToStore = Path.GetFileNameWithoutExtension(upload.FileName) + Guid.NewGuid().ToString() + Path.GetExtension(upload.FileName);
             var filePath = Path.Combine(uploadsPath, fileNameToStore);
 
-            // Save the decrypted file
             await System.IO.File.WriteAllBytesAsync(filePath, decryptedFile);
+
+            if(!await ScanService.ScanFileWithWindowsDefenderAsync(Path.GetFullPath(filePath)))
+            {
+                System.IO.File.Delete(filePath);
+            }
+
+            var signature = await _keyService.SignDataAsync(upload.EncryptedFile);
 
             var attachment = new Attachment
             {
-                FilePath = $"/uploads/{fileName}",
-                FileName = fileNameToStore,
-                UserId = user.Id
+                FilePath = $"/uploads/{fileNameToStore}",
+                FileName = upload.FileName,
+                UserId = user.Id,
+                Signature = Convert.ToBase64String(signature)
             };
 
             _context.Attachments.Add(attachment);
             await _context.SaveChangesAsync();
 
-            TempData["Success"] = "File uploaded successfully.";
-            return RedirectToAction(nameof(List));
+            return Ok();
         }
         catch (Exception ex)
         {
-            TempData["Error"] = $"An error occurred: {ex.Message}";
-            return View();
+            return BadRequest($"An error occurred: {ex.Message}");
         }
     }
 
-
-    [HttpGet]
-    public async Task<IActionResult> List(string searchNationalNumber)
+    [HttpGet("List")]
+    public async Task<IActionResult> List([FromQuery] string? searchNationalNumber)
     {
         var user = await _userManager.GetUserAsync(User);
 
         if (user is null)
         {
-            TempData["Error"] = "You must be logged in to view attachments.";
-            return RedirectToAction(nameof(AccountController.Login), "Account");
+            return Unauthorized();
         }
 
         IQueryable<Attachment> attachmentsQuery;
@@ -109,33 +114,52 @@ public class AttachmentController : Controller
             }
             var attachments = await attachmentsQuery.ToListAsync();
 
-            // Pass search query back to the view for user feedback
-            ViewData["SearchQuery"] = searchNationalNumber;
+            var encAttachments = await KeyManagementService.EncryptSymmetricAsync(JsonSerializer.Serialize(attachments));
 
-            return View(attachments);
+            return Ok(encAttachments);
         }
-        var userAttachments = await _context.Attachments.Where(a => a.UserId == user!.Id).ToListAsync();
 
-        return View(userAttachments);
+        var userAttachments = await _context.Attachments
+            .Where(a => a.UserId == user!.Id)
+            .ToListAsync();
+
+        var userEncAttachments = await KeyManagementService.EncryptSymmetricAsync(JsonSerializer.Serialize(userAttachments));
+
+        return Ok(userEncAttachments);
     }
 
-    public async Task<IActionResult> Download(int id)
+    [HttpGet("Download/{id:int}")]
+    public async Task<IActionResult> Download([FromRoute] int id)
     {
         var attachment = await _context.Attachments.FindAsync(id);
         if (attachment is null)
             return NotFound();
 
         var filePath = Path.Combine(Directory.GetCurrentDirectory(), $"wwwroot/{attachment.FilePath}");
-        //var filePath = attachment.FilePath;
-        var fileName = Path.GetFileName(filePath);
         var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
 
-        return File(fileBytes, "application/octet-stream", fileName);
+        var result = new
+        {
+            FileName = attachment.FileName,
+            EncryptedFile = await KeyManagementService.EncryptSymmetricAsync(Convert.ToBase64String(fileBytes)),
+            Signature = attachment.Signature
+        };
+
+        return Ok(result);
     }
 
+    [HttpGet("GetSignature/{id:int}")]
+    public async Task<IActionResult> GetSignature([FromRoute] int id)
+    {
+        var attachment = await _context.Attachments.FindAsync(id);
+        if (attachment is null)
+            return NotFound();
 
-    [HttpPost]
-    public async Task<IActionResult> Delete(int id)
+        return Ok(attachment.Signature);
+    }
+
+    [HttpPost("Delete/{id:int}")]
+    public async Task<IActionResult> Delete([FromRoute] int id)
     {
         var attachment = await _context.Attachments.FindAsync(id);
         if (attachment is null)
@@ -143,11 +167,21 @@ public class AttachmentController : Controller
 
         var filePath = Path.Combine(Directory.GetCurrentDirectory(), $"wwwroot/{attachment.FilePath}");
         System.IO.File.Delete(filePath);
-        
+
         _context.Attachments.Remove(attachment);
         await _context.SaveChangesAsync();
 
-        TempData["Success"] = "File deleted successfully.";
-        return RedirectToAction(nameof(List));
+        return NoContent();
     }
+}
+
+public class UploadViewModel
+{
+    [Required]
+    [JsonPropertyName("encryptedFile")]
+    public string EncryptedFile { get; set; }
+    
+    [Required]
+    [JsonPropertyName("fileName")]
+    public string FileName { get; set; }
 }

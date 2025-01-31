@@ -1,83 +1,19 @@
-﻿using CertificateAuthorityServer.Controllers.Dtos;
-using CertificateAuthorityServer.Data;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
+using Shared.Encryptions;
 
-namespace CertificateAuthorityServer.Utilities;
+namespace LegalDocumentManager.Services;
 
 public class KeyManagementService
 {
     private const string PrivateKeyPath = "Keys/private_key.pem";
     private const string PublicKeyPath = "Keys/public_key.pem";
     private const string Passphrase = "YourSecurePassphraseHere";
-    private readonly string DomainUrl;
+    public static string AESKey = AESKeyGenerator.GenerateKeyBase64(128);
+    public static string ClientPublicKeyString64;
 
-    public KeyManagementService(IConfiguration configuration)
+    public KeyManagementService()
     {
-        DomainUrl = configuration["DomainUrl"]!;
-    }
-
-    public async Task<Certificate> GenerateCertificateAsync(CertificateRequest request)
-    {
-        if (string.IsNullOrEmpty(request.ClientPublicKey))
-            throw new ArgumentException("Client public key is required.");
-
-        var certificate = new Certificate
-        {
-            IssuedTo = request.IssuedTo,
-            IssuedFrom = DomainUrl,
-            IssuedAt = DateTime.Now,
-            Expiry = request.Expiry,
-            ClientPublicKey = request.ClientPublicKey
-        };
-
-        string certificateData = JsonSerializer.Serialize(new
-        {
-            certificate.IssuedTo,
-            certificate.IssuedFrom,
-            certificate.IssuedAt,
-            certificate.Expiry,
-            certificate.ClientPublicKey
-        });
-
-        using (RSA rsa = await GetPrivateKeyAsync())
-        {
-            byte[] certificateBytes = Encoding.UTF8.GetBytes(certificateData);
-            byte[] signature = rsa.SignData(certificateBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-            certificate.Signature = Convert.ToBase64String(signature);
-        }
-
-        return certificate;
-    }
-
-    public async Task<bool> ValidateCertificateAsync(Certificate certificate)
-    {
-        // Check if the certificate has expired
-        if (DateTime.UtcNow < certificate.IssuedAt || DateTime.UtcNow > certificate.Expiry)
-            return false;
-
-        // Serialize the certificate data (excluding the signature) to JSON
-        string certificateData = JsonSerializer.Serialize(new
-        {
-            certificate.IssuedTo,
-            certificate.IssuedFrom,
-            certificate.IssuedAt,
-            certificate.Expiry,
-            certificate.ClientPublicKey
-        });
-
-        // Verify the signature
-        using RSA rsa = await GetPublicKeyAsync();
-        byte[] certificateBytes = Encoding.UTF8.GetBytes(certificateData);
-        byte[] signatureBytes = Convert.FromBase64String(certificate.Signature);
-
-        return rsa.VerifyData(
-            certificateBytes,
-            signatureBytes,
-            HashAlgorithmName.SHA256,
-            RSASignaturePadding.Pkcs1
-        );
     }
 
     public async Task GenerateKeyPairAsync()
@@ -131,13 +67,6 @@ public class KeyManagementService
         );
     }
 
-    public async Task<bool> VerifySignatureAsync(string originalData, byte[] signature, string publicKey64)
-    {
-        using RSA rsa = ConvertBase64PublicKeyToRsa(publicKey64);
-        byte[] dataBytes = Encoding.UTF8.GetBytes(originalData);
-        return rsa.VerifyData(dataBytes, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-    }
-
     private async Task<byte[]> EncryptPrivateKeyAsync(byte[] privateKey)
     {
         using Aes aes = Aes.Create();
@@ -168,7 +97,7 @@ public class KeyManagementService
 
         using var decryptor = aes.CreateDecryptor();
         using var cryptoStream = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
-        
+
         var decrypted = new MemoryStream();
         cryptoStream.CopyTo(decrypted);
         return decrypted.ToArray();
@@ -193,5 +122,56 @@ public class KeyManagementService
         rsa.ImportSubjectPublicKeyInfo(publicKeyBytes, out _);
 
         return rsa;
+    }
+
+    public static async Task<string> EncryptSymmetricAsync(string plainText)
+    {
+        using var aesAlg = Aes.Create();
+        aesAlg.Key = Convert.FromBase64String(AESKey);
+        aesAlg.Mode = CipherMode.CBC;
+        aesAlg.Padding = PaddingMode.PKCS7;
+
+        aesAlg.GenerateIV();
+        byte[] iv = aesAlg.IV;
+
+        using var msEncrypt = new MemoryStream();
+        await msEncrypt.WriteAsync(iv, 0, iv.Length); // Store IV first
+
+        using (var csEncrypt = new CryptoStream(msEncrypt, aesAlg.CreateEncryptor(aesAlg.Key, iv), CryptoStreamMode.Write))
+
+        using (var swEncrypt = new StreamWriter(csEncrypt))
+        {
+            await swEncrypt.WriteAsync(plainText);
+            swEncrypt.Flush(); // Ensure everything is written
+        }
+
+        byte[] encryptedBytes = msEncrypt.ToArray();
+        //Console.WriteLine($"Encrypted Bytes Length: {encryptedBytes.Length}");
+        return Convert.ToBase64String(encryptedBytes);
+    }
+
+    public static async Task<string> DecryptSymmetricAsync(string cipherText)
+    {
+        byte[] fullCipher = Convert.FromBase64String(cipherText);
+
+        using var aesAlg = Aes.Create();
+        aesAlg.Key = Convert.FromBase64String(AESKey);
+        aesAlg.Mode = CipherMode.CBC;
+        aesAlg.Padding = PaddingMode.PKCS7;
+
+        byte[] iv = new byte[aesAlg.BlockSize / 8];
+        Array.Copy(fullCipher, iv, iv.Length);
+
+        //Console.WriteLine($"Decryption IV: {BitConverter.ToString(iv)}");
+
+        using var decryptor = aesAlg.CreateDecryptor(aesAlg.Key, iv);
+        using var msDecrypt = new MemoryStream(fullCipher, iv.Length, fullCipher.Length - iv.Length);
+        using var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
+        using var srDecrypt = new StreamReader(csDecrypt);
+
+        var decryptedText = await srDecrypt.ReadToEndAsync();
+
+        //Console.WriteLine($"Decrypted Text: {decryptedText}");
+        return decryptedText;
     }
 }
