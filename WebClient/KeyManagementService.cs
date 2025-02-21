@@ -12,23 +12,18 @@ public class KeyManagementService
     private const string Passphrase = "YourSecurePassphraseHere";
     private const string ServerKeysURL = "https://localhost:7011/api/keys";
     private const string CertificateAuthorityURL = "https://localhost:7154/api/key";
-    public static RSA CAPublicKey = null;
-    public static RSA ServerPublicKey = null;
-    public static string SymmetricKey = null;
+    public static RSA? CAPublicKey;
+    public static RSA? ServerPublicKey;
+    public static string? SymmetricKey;
     public static bool IsValidSignature = false;
-
-    public KeyManagementService()
-    {
-    }
 
     public async Task GenerateKeyPairAsync()
     {
-        using RSA rsa = RSA.Create(2048); // Generate a 2048-bit RSA key pair
-                                          // Export public key
+        using RSA rsa = RSA.Create(2048);
+
         byte[] publicKey = rsa.ExportRSAPublicKey();
         File.WriteAllBytes(PublicKeyPath, publicKey);
 
-        // Export and encrypt private key
         byte[] privateKey = rsa.ExportRSAPrivateKey();
         byte[] encryptedPrivateKey = await EncryptPrivateKeyAsync(privateKey);
         File.WriteAllBytes(PrivateKeyPath, encryptedPrivateKey);
@@ -147,6 +142,7 @@ public class KeyManagementService
         aes.Key = await DeriveKeyFromPassphraseAsync();
 
         using var ms = new MemoryStream(encryptedPrivateKey);
+
         var iv = new byte[16];
         ms.Read(iv, 0, iv.Length); // Read IV from the beginning
         aes.IV = iv;
@@ -183,20 +179,13 @@ public class KeyManagementService
         return rsa;
     }
 
-    private RSA ConvertBase64PrivateKeyToRsa(string base64PrivateKey)
-    {
-        byte[] privateKeyBytes = Convert.FromBase64String(base64PrivateKey);
-
-        RSA rsa = RSA.Create();
-
-        rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
-
-        return rsa;
-    }
-
     public static async Task<string> EncryptSymmetricAsync(string plainText)
     {
         using var aesAlg = Aes.Create();
+
+        if (SymmetricKey is null)
+            throw new ArgumentNullException(nameof(SymmetricKey));
+
         aesAlg.Key = Convert.FromBase64String(SymmetricKey);
         aesAlg.Mode = CipherMode.CBC;
         aesAlg.Padding = PaddingMode.PKCS7;
@@ -216,7 +205,7 @@ public class KeyManagementService
         }
 
         byte[] encryptedBytes = msEncrypt.ToArray();
-        //Console.WriteLine($"Encrypted Bytes Length: {encryptedBytes.Length}");
+
         return Convert.ToBase64String(encryptedBytes);
     }
 
@@ -225,6 +214,10 @@ public class KeyManagementService
         byte[] fullCipher = Convert.FromBase64String(cipherText);
 
         using var aesAlg = Aes.Create();
+
+        if (SymmetricKey is null)
+            throw new ArgumentNullException(nameof(SymmetricKey));
+
         aesAlg.Key = Convert.FromBase64String(SymmetricKey);
         aesAlg.Mode = CipherMode.CBC;
         aesAlg.Padding = PaddingMode.PKCS7;
@@ -232,16 +225,14 @@ public class KeyManagementService
         byte[] iv = new byte[aesAlg.BlockSize / 8];
         Array.Copy(fullCipher, iv, iv.Length);
 
-        //Console.WriteLine($"Decryption IV: {BitConverter.ToString(iv)}");
-
         using var decryptor = aesAlg.CreateDecryptor(aesAlg.Key, iv);
+
         using var msDecrypt = new MemoryStream(fullCipher, iv.Length, fullCipher.Length - iv.Length);
         using var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
         using var srDecrypt = new StreamReader(csDecrypt);
 
         var decryptedText = await srDecrypt.ReadToEndAsync();
 
-        //Console.WriteLine($"Decrypted Text: {decryptedText}");
         return decryptedText;
     }
 
@@ -267,7 +258,7 @@ public class KeyManagementService
             throw new ApplicationException("Failed to fetch the public key.", ex);
         }
     }
-    public async Task VerifyCertificate(Certificate certificate)
+    public Task VerifyCertificate(Certificate certificate)
     {
         if (certificate == null)
             throw new ArgumentNullException(nameof(certificate), "Certificate cannot be null.");
@@ -315,8 +306,7 @@ public class KeyManagementService
             if (certificate.IssuedFrom != "Certifier.com") // Replace with your CA URL
                 throw new InvalidOperationException("The certificate was not issued by a trusted authority.");
 
-            // If all checks pass
-            Console.WriteLine("Certificate is valid.");
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {

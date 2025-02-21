@@ -17,25 +17,6 @@ public class TokenService
 
     public string GenerateToken(ApplicationUser user)
     {
-        //var claims = new List<Claim>
-        //{
-        //    new(ClaimTypes.Name, user.UserName!),
-        //    // Add more claims as needed
-        //};
-
-        //var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-        //var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        //var token = new JwtSecurityToken(
-        //    _configuration["Jwt:Issuer"],
-        //    _configuration["Jwt:Audience"],
-        //    claims,
-        //    expires: DateTime.UtcNow.AddMinutes(30),
-        //    signingCredentials: creds
-        //);
-
-        var tokenHandler = new JwtSecurityTokenHandler();
-
         var signingKey = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"]!);
 
         List<Claim> claims =
@@ -61,11 +42,10 @@ public class TokenService
             ),
         };
 
+        var tokenHandler = new JwtSecurityTokenHandler();
+
         var token = tokenHandler.CreateToken(tokenDescriptor);
-        //var token = tokenHandler.CreateJwtSecurityToken(tokenDescriptor);
 
-        var jwtToken = tokenHandler.WriteToken(token);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return tokenHandler.WriteToken(token);
     }
 }

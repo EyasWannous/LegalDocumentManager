@@ -45,6 +45,7 @@ public class KeyManagementService
         {
             byte[] certificateBytes = Encoding.UTF8.GetBytes(certificateData);
             byte[] signature = rsa.SignData(certificateBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
             certificate.Signature = Convert.ToBase64String(signature);
         }
 
@@ -53,7 +54,6 @@ public class KeyManagementService
 
     public async Task<bool> ValidateCertificateAsync(Certificate certificate)
     {
-        // Check if the certificate has expired
         if (DateTime.UtcNow < certificate.IssuedAt || DateTime.UtcNow > certificate.Expiry)
             return false;
 
@@ -82,14 +82,14 @@ public class KeyManagementService
 
     public async Task GenerateKeyPairAsync()
     {
-        using RSA rsa = RSA.Create(2048); // Generate a 2048-bit RSA key pair
-                                          // Export public key
+        using RSA rsa = RSA.Create(2048);
+
         byte[] publicKey = rsa.ExportRSAPublicKey();
         File.WriteAllBytes(PublicKeyPath, publicKey);
 
-        // Export and encrypt private key
         byte[] privateKey = rsa.ExportRSAPrivateKey();
         byte[] encryptedPrivateKey = await EncryptPrivateKeyAsync(privateKey);
+
         File.WriteAllBytes(PrivateKeyPath, encryptedPrivateKey);
     }
 
@@ -133,8 +133,9 @@ public class KeyManagementService
 
     public async Task<bool> VerifySignatureAsync(string originalData, byte[] signature, string publicKey64)
     {
-        using RSA rsa = ConvertBase64PublicKeyToRsa(publicKey64);
+        using RSA rsa = await ConvertBase64PublicKeyToRsaAsync(publicKey64);
         byte[] dataBytes = Encoding.UTF8.GetBytes(originalData);
+
         return rsa.VerifyData(dataBytes, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
     }
 
@@ -181,17 +182,14 @@ public class KeyManagementService
         );
     }
 
-    private RSA ConvertBase64PublicKeyToRsa(string base64PublicKey)
+    private Task<RSA> ConvertBase64PublicKeyToRsaAsync(string base64PublicKey)
     {
-        // Decode the Base64-encoded string to get the DER bytes
         byte[] publicKeyBytes = Convert.FromBase64String(base64PublicKey);
 
-        // Create an RSA instance
         RSA rsa = RSA.Create();
 
-        // Import the public key in DER format
         rsa.ImportSubjectPublicKeyInfo(publicKeyBytes, out _);
 
-        return rsa;
+        return Task.FromResult(rsa);
     }
 }

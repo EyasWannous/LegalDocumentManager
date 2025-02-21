@@ -10,7 +10,7 @@ public class KeyManagementService
     private const string PublicKeyPath = "Keys/public_key.pem";
     private const string Passphrase = "YourSecurePassphraseHere";
     public static string AESKey = AESKeyGenerator.GenerateKeyBase64(128);
-    public static string ClientPublicKeyString64;
+    public static string ClientPublicKeyString64 = string.Empty;
 
     public KeyManagementService()
     {
@@ -18,14 +18,14 @@ public class KeyManagementService
 
     public async Task GenerateKeyPairAsync()
     {
-        using RSA rsa = RSA.Create(2048); // Generate a 2048-bit RSA key pair
-                                          // Export public key
+        using RSA rsa = RSA.Create(2048);
+
         byte[] publicKey = rsa.ExportRSAPublicKey();
         File.WriteAllBytes(PublicKeyPath, publicKey);
 
-        // Export and encrypt private key
         byte[] privateKey = rsa.ExportRSAPrivateKey();
         byte[] encryptedPrivateKey = await EncryptPrivateKeyAsync(privateKey);
+
         File.WriteAllBytes(PrivateKeyPath, encryptedPrivateKey);
     }
 
@@ -49,6 +49,7 @@ public class KeyManagementService
             throw new FileNotFoundException("Public key not found.");
 
         byte[] publicKey = File.ReadAllBytes(PublicKeyPath);
+
         RSA rsa = RSA.Create();
         rsa.ImportRSAPublicKey(publicKey, out _);
 
@@ -91,6 +92,7 @@ public class KeyManagementService
         aes.Key = await DeriveKeyFromPassphraseAsync();
 
         using var ms = new MemoryStream(encryptedPrivateKey);
+
         var iv = new byte[16];
         ms.Read(iv, 0, iv.Length); // Read IV from the beginning
         aes.IV = iv;
@@ -100,6 +102,7 @@ public class KeyManagementService
 
         var decrypted = new MemoryStream();
         cryptoStream.CopyTo(decrypted);
+
         return decrypted.ToArray();
     }
 
@@ -127,6 +130,7 @@ public class KeyManagementService
     public static async Task<string> EncryptSymmetricAsync(string plainText)
     {
         using var aesAlg = Aes.Create();
+
         aesAlg.Key = Convert.FromBase64String(AESKey);
         aesAlg.Mode = CipherMode.CBC;
         aesAlg.Padding = PaddingMode.PKCS7;
@@ -146,7 +150,7 @@ public class KeyManagementService
         }
 
         byte[] encryptedBytes = msEncrypt.ToArray();
-        //Console.WriteLine($"Encrypted Bytes Length: {encryptedBytes.Length}");
+
         return Convert.ToBase64String(encryptedBytes);
     }
 
@@ -162,16 +166,15 @@ public class KeyManagementService
         byte[] iv = new byte[aesAlg.BlockSize / 8];
         Array.Copy(fullCipher, iv, iv.Length);
 
-        //Console.WriteLine($"Decryption IV: {BitConverter.ToString(iv)}");
 
         using var decryptor = aesAlg.CreateDecryptor(aesAlg.Key, iv);
+
         using var msDecrypt = new MemoryStream(fullCipher, iv.Length, fullCipher.Length - iv.Length);
         using var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
         using var srDecrypt = new StreamReader(csDecrypt);
 
         var decryptedText = await srDecrypt.ReadToEndAsync();
 
-        //Console.WriteLine($"Decrypted Text: {decryptedText}");
         return decryptedText;
     }
 }

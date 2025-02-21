@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace WebClient;
+﻿namespace WebClient.Models;
 
 public class CertificateService
 {
@@ -24,7 +22,7 @@ public class CertificateService
 
             var certificate = await response.Content.ReadFromJsonAsync<Certificate>();
             if (certificate is null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(certificate));
 
             Certificate = certificate;
         }
@@ -37,27 +35,4 @@ public class CertificateService
             throw new Exception(ex.Message);
         }
     }
-}
-
-public class Certificate
-{
-    public int Id { get; set; }
-
-    [JsonPropertyName("issuedTo")]
-    public required string IssuedTo { get; set; }
-
-    [JsonPropertyName("issuedFrom")]
-    public required string IssuedFrom { get; set; }
-
-    [JsonPropertyName("issuedAt")]
-    public required DateTime IssuedAt { get; set; }
-
-    [JsonPropertyName("expiry")]
-    public required DateTime Expiry { get; set; }
-
-    [JsonPropertyName("clientPublicKey")]
-    public required string ClientPublicKey { get; set; }
-
-    [JsonPropertyName("signature")]
-    public required string Signature { get; set; }
 }

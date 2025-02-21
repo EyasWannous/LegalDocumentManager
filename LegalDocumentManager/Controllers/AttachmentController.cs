@@ -1,13 +1,12 @@
 ﻿using LegalDocumentManager.Data;
+using LegalDocumentManager.Models;
 using LegalDocumentManager.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Attachment = LegalDocumentManager.Data.Attachment;
 
 namespace LegalDocumentManager.Controllers;
@@ -38,24 +37,16 @@ public class AttachmentController : ControllerBase
             var user = await _userManager.GetUserAsync(User);
 
             if (user is null)
-            {
-                return BadRequest("");
-            }
+                return Unauthorized();
 
-            if (string.IsNullOrWhiteSpace(upload.EncryptedFile) || string.IsNullOrWhiteSpace(upload.FileName))
-            {
-                return BadRequest("");
-            }
+            if (string.IsNullOrWhiteSpace(upload?.EncryptedFile) || string.IsNullOrWhiteSpace(upload.FileName))
+                return BadRequest();
 
-            //var encryptionService = new EncryptionAES(KeyManagementService.AESKey);
-            //var decryptedFileString = await KeyManagementService.DecryptSymmetricAsync(upload.EncryptedFile);
             var decryptedFile = Convert.FromBase64String(upload.EncryptedFile);
 
             var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
             if (!Directory.Exists(uploadsPath))
-            {
                 Directory.CreateDirectory(uploadsPath);
-            }
 
             var fileNameToStore = Path.GetFileNameWithoutExtension(upload.FileName) + Guid.NewGuid().ToString() + Path.GetExtension(upload.FileName);
             var filePath = Path.Combine(uploadsPath, fileNameToStore);
@@ -63,9 +54,7 @@ public class AttachmentController : ControllerBase
             await System.IO.File.WriteAllBytesAsync(filePath, decryptedFile);
 
             if (!await ScanService.ScanFileWithWindowsDefenderAsync(Path.GetFullPath(filePath)))
-            {
                 System.IO.File.Delete(filePath);
-            }
 
             var signature = await _keyService.SignDataAsync(upload.EncryptedFile);
 
@@ -74,7 +63,8 @@ public class AttachmentController : ControllerBase
                 FilePath = $"/uploads/{fileNameToStore}",
                 FileName = upload.FileName,
                 UserId = user.Id,
-                Signature = Convert.ToBase64String(signature)
+                Signature = Convert.ToBase64String(signature),
+                User = user
             };
 
             _context.Attachments.Add(attachment);
@@ -94,21 +84,17 @@ public class AttachmentController : ControllerBase
         var user = await _userManager.GetUserAsync(User);
 
         if (user is null)
-        {
             return Unauthorized();
-        }
 
         IQueryable<Attachment> attachmentsQuery;
 
         if (user is GovernmentAccount)
         {
-            // Allow government accounts to search all users
             attachmentsQuery = _context.Attachments.Include(a => a.User);
 
             if (!string.IsNullOrWhiteSpace(searchNationalNumber))
-            {
                 attachmentsQuery = attachmentsQuery.Where(a => a.User.Email!.Contains(searchNationalNumber));
-            }
+
             var attachments = await attachmentsQuery.ToListAsync();
 
             var encAttachments = await KeyManagementService.EncryptSymmetricAsync(JsonSerializer.Serialize(attachments));
@@ -170,15 +156,4 @@ public class AttachmentController : ControllerBase
 
         return NoContent();
     }
-}
-
-public class UploadViewModel
-{
-    [Required]
-    [JsonPropertyName("encryptedFile")]
-    public string EncryptedFile { get; set; }
-
-    [Required]
-    [JsonPropertyName("fileName")]
-    public string FileName { get; set; }
 }

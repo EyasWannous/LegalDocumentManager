@@ -19,8 +19,10 @@ public class KeysController : ControllerBase
     public async Task<IActionResult> GetPublicKey(string publickey)
     {
         KeyManagementService.ClientPublicKeyString64 = publickey;
+
         var publicKey = await _keyService.GetPublicKeyAsync();
         var publicKeyString = Convert.ToBase64String(publicKey.ExportRSAPublicKey());
+
         return Ok(publicKeyString);
     }
 

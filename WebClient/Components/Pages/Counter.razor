@@ -6,23 +6,3 @@
 <p role="status" class="lead">Current count: <span class="badge bg-secondary">@currentCount</span></p>
 
 <button class="btn btn-primary btn-lg mt-3" @onclick="IncrementCount">Click me</button>
-
-<style>
-    h1 {
-        font-weight: 600;
-    }
-
-    .lead {
-        font-size: 1.2rem;
-    }
-</style>
-
-
-@code {
-    private int currentCount = 0;
-
-    private void IncrementCount()
-    {
-        currentCount++;
-    }
-}

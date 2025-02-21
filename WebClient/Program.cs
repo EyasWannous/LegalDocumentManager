@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using WebClient;
 using WebClient.Components;
+using WebClient.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 

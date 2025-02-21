@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using System.Security.Claims;
+using WebClient.Models;
 
 namespace WebClient;
 
@@ -23,8 +24,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Name, user.UserName),
-            new Claim(ClaimTypes.Email, user.Email)
+            new(ClaimTypes.Name, user.UserName),
+            new(ClaimTypes.Email, user.Email)
         };
 
         var identity = new ClaimsIdentity(claims, "apiauth_type");
@@ -44,11 +45,4 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         await _sessionStorage.DeleteAsync("UserSession");
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
-}
-
-public class UserSession
-{
-    public string UserName { get; set; }
-    public string Email { get; set; }
-    public string Token { get; set; }
 }

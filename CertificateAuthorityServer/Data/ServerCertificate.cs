@@ -7,8 +7,11 @@ public class ServerCertificate
     public int Id { get; set; }
 
     [Required]
-    public string Host { get; set; }
+    public string Host { get; set; } = string.Empty;
+
     public string? Key { get; set; }
-    public string PublicKey { get; set; }
+
+    public string PublicKey { get; set; } = string.Empty;
+
     public Certificate? Certificate { get; set; }
 }

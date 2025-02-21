@@ -18,6 +18,9 @@ public class ApiService
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<LoginResult>();
+        if (result is null)
+            throw new ArgumentNullException("Login Failed");
+
         return result.Token;
     }
 
@@ -27,6 +30,9 @@ public class ApiService
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<LoginResult>();
+        if (result is null)
+            throw new ArgumentNullException("Register Failed");
+
         return result.Token;
     }
 
@@ -34,9 +40,4 @@ public class ApiService
     {
         await _httpClient.GetAsync("Account/Logout");
     }
-}
-
-public class LoginResult
-{
-    public string Token { get; set; }
 }

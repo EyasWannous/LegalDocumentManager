@@ -3,7 +3,6 @@
 @rendermode InteractiveServer
 
 @using Microsoft.AspNetCore.Components.Authorization
-@using WebClient.Models
 
 @inject ApiService ApiService
 @inject NavigationManager Navigation
@@ -51,72 +50,3 @@
 
     <button type="submit">Register</button>
 </EditForm>
-
-<style>
-    h3 {
-        color: #4a90e2;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
-    form {
-        max-width: 400px;
-        margin: auto;
-        padding: 20px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    label {
-        font-weight: bold;
-    }
-
-    input, button {
-        width: 100%;
-        margin-bottom: 10px;
-    }
-
-    button {
-        background-color: #4a90e2;
-        color: white;
-        border: none;
-        padding: 10px;
-        border-radius: 5px;
-        transition: background-color 0.3s;
-    }
-
-    button:hover {
-        background-color: #357ab7;
-    }
-
-    .alert {
-        margin-top: 10px;
-    }
-</style>
-
-@code {
-    private RegisterViewModel registerModel = new RegisterViewModel();
-    private string ErrorMessage = string.Empty;
-
-    private async Task HandleRegister()
-    {
-        ErrorMessage = string.Empty; // Clear previous errors
-
-        try
-        {
-            var token = await ApiService.RegisterAsync(registerModel);
-            var userSession = new UserSession { UserName = registerModel.NationalNumber, Email = registerModel.NationalNumber, Token = token };
-            await ((CustomAuthenticationStateProvider)AuthenticationStateProvider).MarkUserAsAuthenticated(userSession);
-            Navigation.NavigateTo("/");
-        }
-        catch (HttpRequestException ex)
-        {
-            ErrorMessage = $"Registration failed: {ex.Message}";
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"An error occurred: {ex.Message}";
-        }
-    }
-}

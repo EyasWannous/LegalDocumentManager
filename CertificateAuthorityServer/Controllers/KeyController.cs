@@ -1,9 +1,9 @@
-﻿using CertificateAuthorityServer.Data;
+﻿using CertificateAuthorityServer.Controllers.Dtos;
+using CertificateAuthorityServer.Data;
 using CertificateAuthorityServer.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Shared.Encryptions;
-using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 
 namespace CertificateAuthorityServer.Controllers;
@@ -51,7 +51,7 @@ public class KeyController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> ExchangeHashedSymmetricKey([FromBody] HashedSymmetricKey input)
+    public async Task<IActionResult> ExchangeHashedSymmetricKey([FromBody] HashedSymmetricKeyDto input)
     {
         try
         {
@@ -77,10 +77,4 @@ public class KeyController : ControllerBase
             return StatusCode(500, ex.Message);
         }
     }
-}
-
-public class HashedSymmetricKey
-{
-    [Required]
-    public string HashedKey { get; set; } = string.Empty;
 }

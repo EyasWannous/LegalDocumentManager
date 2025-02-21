@@ -2,7 +2,6 @@
 @rendermode InteractiveServer
 
 @using Microsoft.AspNetCore.Components.Authorization
-@using WebClient.Models
 
 @inject ApiService ApiService
 @inject NavigationManager Navigation
@@ -29,109 +28,7 @@
     <button type="submit" class="btn btn-primary w-100">Login</button>
 </EditForm>
 
-<style>
-    /* .form-label { */
-    /*     font-weight: 600; */
-    /* } */
-
-    /* .btn-primary { */
-    /*     background-color: #007bff; */
-    /*     border: none; */
-    /*     transition: background-color 0.3s; */
-    /* } */
-
-    /* .btn-primary:hover { */
-    /*     background-color: #0056b3; */
-    /* } */
-
-    /* .shadow { */
-    /*     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1); */
-    /* } */
-
-    h3 {
-        color: #4a90e2;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
-    form {
-        max-width: 400px;
-        margin: auto;
-        padding: 20px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    label {
-        font-weight: bold;
-    }
-
-    input, button {
-        width: 100%;
-        margin-bottom: 10px;
-    }
-
-    button {
-        background-color: #4a90e2;
-        color: white;
-        border: none;
-        padding: 10px;
-        border-radius: 5px;
-        transition: background-color 0.3s;
-    }
-
-    button:hover {
-        background-color: #357ab7;
-    }
-
-    .alert {
-        margin-top: 10px;
-    }
-</style>
-
-
 @if (!string.IsNullOrEmpty(ErrorMessage))
 {
     <div class="alert alert-danger">@ErrorMessage</div>
-}
-
-@code {
-    private LoginViewModel loginModel = new LoginViewModel();
-    private string ErrorMessage = string.Empty; // To store error messages
-
-    private async Task HandleLogin()
-    {
-        ErrorMessage = string.Empty; // Clear previous error messages
-
-        try
-        {
-            // Call the API to log in
-            var token = await ApiService.LoginAsync(loginModel);
-
-            // Create a user session
-            var userSession = new UserSession
-            {
-                UserName = loginModel.NationalNumber,
-                Email = loginModel.NationalNumber,
-                Token = token
-            };
-
-            // Mark the user as authenticated
-            await ((CustomAuthenticationStateProvider)AuthenticationStateProvider).MarkUserAsAuthenticated(userSession);
-
-            // Navigate to the home page
-            Navigation.NavigateTo("/");
-        }
-        catch (HttpRequestException ex)
-        {
-            // Handle API errors (e.g., 400 Bad Request, 500 Internal Server Error)
-            ErrorMessage = $"Login failed: {ex.Message}";
-        }
-        catch (Exception ex)
-        {
-            // Handle other exceptions (e.g., network errors)
-            ErrorMessage = $"An error occurred: {ex.Message}";
-        }
-    }
 }

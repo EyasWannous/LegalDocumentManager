@@ -88,7 +88,6 @@ public class KeyInitializationService : IHostedService
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        // Cleanup logic (if needed)
         return Task.CompletedTask;
     }
 }

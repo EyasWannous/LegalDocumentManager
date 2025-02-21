@@ -19,16 +19,6 @@ public class CertificateController : ControllerBase
         _context = context;
     }
 
-    //[HttpPost("sign")]
-    //public async Task<IActionResult> Sign([FromBody] string data)
-    //{
-    //    if (string.IsNullOrEmpty(data))
-    //        return BadRequest("Data to sign cannot be empty.");
-
-    //    var signature = await _keyManagementService.SignDataAsync(data);
-    //    return Ok(new { Signature = Convert.ToBase64String(signature) });
-    //}
-
     [HttpPost("verify")]
     public async Task<IActionResult> Verify([FromBody] VerifyRequest request)
     {
