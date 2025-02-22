@@ -7,7 +7,7 @@ public class LoginViewModel
     [Required]
     [StringLength(100)]
     public required string NationalNumber { get; set; }
-    
+
     [Required]
     [DataType(DataType.Password)]
     public required string Password { get; set; }

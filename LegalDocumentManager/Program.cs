@@ -1,6 +1,3 @@
-using System.Text;
-using System.Threading.RateLimiting;
-using LegalDocumentManager;
 using LegalDocumentManager.Data;
 using LegalDocumentManager.Extensions;
 using LegalDocumentManager.HostedServices;
@@ -12,6 +9,8 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,7 +23,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseInMemoryDatabase("TestDb")
-);  
+);
 
 builder.Services.Configure<IISServerOptions>(options =>
 {

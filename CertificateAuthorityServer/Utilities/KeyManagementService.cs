@@ -168,7 +168,7 @@ public class KeyManagementService
 
         using var decryptor = aes.CreateDecryptor();
         using var cryptoStream = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
-        
+
         var decrypted = new MemoryStream();
         cryptoStream.CopyTo(decrypted);
         return decrypted.ToArray();

@@ -61,7 +61,7 @@ public class EncryptionAES
 
         byte[] iv = new byte[aesAlg.BlockSize / 8];
         Array.Copy(fullCipher, iv, iv.Length);
-         
+
         //Console.WriteLine($"Decryption IV: {BitConverter.ToString(iv)}");
 
         using var decryptor = aesAlg.CreateDecryptor(aesAlg.Key, iv);

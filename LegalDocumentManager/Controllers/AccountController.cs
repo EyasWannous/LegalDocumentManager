@@ -59,12 +59,12 @@ public class AccountController : ControllerBase
                 FullName = model.FullName,
             };
 
-        
+
         var result = await _userManager.CreateAsync(user, model.Password);
         if (!result.Succeeded)
             return BadRequest(result.Errors.Select(x => x.Description).ToList());
 
-        
+
         var token = _tokenService.GenerateToken(user);
         return Ok(new { token });
     }

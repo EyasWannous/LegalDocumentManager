@@ -1,6 +1,6 @@
-﻿using System.Security.Cryptography;
+﻿using Shared.Encryptions;
+using System.Security.Cryptography;
 using System.Text;
-using Shared.Encryptions;
 
 namespace LegalDocumentManager.Services;
 

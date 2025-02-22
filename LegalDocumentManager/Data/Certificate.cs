@@ -5,7 +5,7 @@ namespace LegalDocumentManager.Data;
 public class Certificate
 {
     public int Id { get; set; }
-    
+
     [JsonPropertyName("issuedTo")]
     public required string IssuedTo { get; set; }
 
